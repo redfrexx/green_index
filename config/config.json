@@ -1,0 +1,27 @@
+{"bbox": "13.6774,51.0222,13.7096,51.0411",
+  13.464752,50.904497, 14.087695,51.243051
+  "timestamp": "20190630",
+  "outdir": "./data",
+  "traffic_features" : [
+      {
+        "tags":
+        {
+          "highway" : ["motorway", "trunk", "primary", "secondary", "tertiary", "residential", "unclassified",
+          "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "living_street"]
+        },
+        "geoms": ["polygon", "line"]
+      },
+      {
+        "tags": {
+          "railway": "*"
+        },
+        "geoms": ["line"]
+      },
+      {
+        "tags": {
+          "waterway": "*"
+        },
+        "geoms": ["polygon"]
+      }
+    ]
+}
