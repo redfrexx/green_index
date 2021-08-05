@@ -1,27 +1,134 @@
-{"bbox": "13.6774,51.0222,13.7096,51.0411",
-  13.464752,50.904497, 14.087695,51.243051
+{
+  "bbox": "13.6774,51.0222,13.7096,51.0411",
   "timestamp": "20190630",
-  "outdir": "./data",
-  "traffic_features" : [
-      {
-        "tags":
-        {
-          "highway" : ["motorway", "trunk", "primary", "secondary", "tertiary", "residential", "unclassified",
-          "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "living_street"]
-        },
-        "geoms": ["polygon", "line"]
+  "outdir": "./data/test",
+  "traffic_features": [
+    {
+      "tags": {
+        "highway": [
+          "motorway",
+          "trunk",
+          "primary",
+          "secondary",
+          "tertiary",
+          "residential",
+          "unclassified",
+          "motorway_link",
+          "trunk_link",
+          "primary_link",
+          "secondary_link",
+          "tertiary_link",
+          "living_street"
+        ]
       },
-      {
-        "tags": {
-          "railway": "*"
-        },
-        "geoms": ["line"]
+      "geoms": [
+        "polygon",
+        "line"
+      ],
+      "name": "highway"
+    },
+    {
+      "tags": {
+        "railway": "*"
       },
-      {
-        "tags": {
-          "waterway": "*"
-        },
-        "geoms": ["polygon"]
-      }
-    ]
+      "geoms": [
+        "line"
+      ],
+      "name": "railway"
+    },
+    {
+      "tags": {
+        "waterway": "*"
+      },
+      "geoms": [
+        "polygon"
+      ],
+      "name": "waterway"
+    },
+    {
+      "tags": {
+        "landuse": [
+          "forest",
+          "meadow",
+          "farmland",
+          "cemetery",
+          "grass",
+          "village_green",
+          "residential",
+          "allotments",
+          "brownfield",
+          "military",
+          "commercial",
+          "construction",
+          "industrial",
+          "retail",
+          "parking"
+        ]
+      },
+      "geoms": [
+        "polygon"
+      ],
+      "name": "landuse"
+    },
+    {
+      "tags": {
+        "natural": [
+          "wood",
+          "scrub",
+          "heath",
+          "water"
+        ]
+      },
+      "geoms": [
+        "polygon"
+      ],
+      "name": "natural"
+    },
+    {
+      "tags": {
+        "leisure": [
+          "park",
+          "recreation_ground",
+          "sports_centre",
+          "pitch"
+        ]
+      },
+      "geoms": [
+        "polygon"
+      ],
+      "name": "leisure"
+    },
+    {
+      "tags": {
+        "tourism": "zoo"
+      },
+      "geoms": [
+        "polygon"
+      ],
+      "name": "tourism"
+    },
+    {
+      "tags": {
+        "amenity": [
+          "kindergarten",
+          "university",
+          "school",
+          "hospital"
+        ]
+      },
+      "geoms": [
+        "polygon"
+      ],
+      "name": "amenity"
+    },
+    {
+      "tags": {
+        "building": "*"
+      },
+      "geoms": [
+        "polygon"
+      ],
+      "name": "building"
+    }
+  ]
 }
