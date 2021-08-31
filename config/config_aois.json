@@ -1,0 +1,128 @@
+{
+  "cloud_coverage": 5,
+  "output_dir": "./data",
+  "log_dir": "./logs",
+  "init_timestamp": "2008-01-01",
+  "aois": {
+    "test": {
+      "name": "Dresden",
+      "bbox": [
+        13.6974,
+        51.0422,
+        13.72,
+        51.0611
+      ],
+      "ndvi_year": 2019,
+      "timestamp": "2019-06-30",
+      "epsg": "25832",
+      "target_geoms": "/Users/chludwig/Data/meingruen/zielgeometrien/osm/v5.0/DD/final_dd_morph10m_validated_EPSG4326_v05.gdb",
+      "fuzzy_centers": {
+        "s2": {
+          "green": 0.71,
+          "mixed": 0.43,
+          "grey": 0.15,
+          "d": 0.094
+        },
+        "vhr": {
+          "green": 0.42,
+          "mixed": 0.24,
+          "grey": 0.06,
+          "d": 0.06
+        }
+      }
+    },
+    "test2": {
+      "name": "Dresden",
+      "bbox": [
+        13.7176,
+        51.0298,
+        13.7957,
+        51.0731
+      ],
+      "ndvi_year": 2019,
+      "timestamp": "2019-06-30",
+      "epsg": "25832",
+      "target_geoms": "/Users/chludwig/Data/meingruen/zielgeometrien/osm/v5.0/DD/final_dd_morph10m_validated_EPSG4326_v05.gdb",
+      "fuzzy_centers": {
+        "s2": {
+          "green": 0.71,
+          "mixed": 0.43,
+          "grey": 0.15,
+          "d": 0.094
+        },
+        "vhr": {
+          "green": 0.42,
+          "mixed": 0.24,
+          "grey": 0.06,
+          "d": 0.06
+        }
+      }
+    },
+    "dresden": {
+      "name": "Dresden",
+      "bbox": [
+        13.6774,
+        51.0222,
+        13.7896,
+        51.0811
+      ],
+      "ndvi_year": 2019,
+      "timestamp": "2019-06-30",
+      "epsg": "25832",
+      "target_geoms": "/Users/chludwig/Data/meingruen/zielgeometrien/osm/v5.0/DD/final_dd_morph10m_validated_EPSG4326_v05.gdb",
+      "fuzzy_centers": {
+        "s2": {
+          "green": 0.71,
+          "mixed": 0.43,
+          "grey": 0.15,
+          "d": 0.094
+        },
+        "vhr": {
+          "green": 0.42,
+          "mixed": 0.24,
+          "grey": 0.06,
+          "d": 0.06
+        }
+      }
+    },
+    "dresden_full": {
+      "name": "Dresden",
+      "bbox": [
+        13.4753296,
+        50.91018206,
+        14.0876945,
+        51.24119145
+      ],
+      "ndvi_year": 2019,
+      "timestamp": "2019-06-30",
+      "epsg": "25832",
+      "target_geoms": "/Users/chludwig/Data/meingruen/zielgeometrien/osm/v5.0/DD/final_dd_morph10m_validated_EPSG4326_v05.gdb",
+      "fuzzy_centers": {
+        "s2": {
+          "green": 0.71,
+          "mixed": 0.43,
+          "grey": 0.15,
+          "d": 0.094
+        },
+        "vhr": {
+          "green": 0.42,
+          "mixed": 0.24,
+          "grey": 0.06,
+          "d": 0.06
+        }
+      }
+    }
+  },
+  "keys": [
+    "building",
+    "surface",
+    "landuse",
+    "natural",
+    "waterway",
+    "wetland",
+    "water",
+    "amenity",
+    "leisure",
+    "tourism"
+  ]
+}

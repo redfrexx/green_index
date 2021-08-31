@@ -1,7 +1,4 @@
 {
-  "bbox": "13.6774,51.0222,13.7096,51.0411",
-  "timestamp": "20190630",
-  "outdir": "./data/test",
   "traffic_features": [
     {
       "tags": {
@@ -44,7 +41,9 @@
         "polygon"
       ],
       "name": "waterway"
-    },
+    }
+  ],
+  "landuse_features": [
     {
       "tags": {
         "landuse": [
@@ -62,7 +61,8 @@
           "construction",
           "industrial",
           "retail",
-          "parking"
+          "parking",
+          "orchard"
         ]
       },
       "geoms": [
@@ -90,7 +90,8 @@
           "park",
           "recreation_ground",
           "sports_centre",
-          "pitch"
+          "pitch",
+          "playground"
         ]
       },
       "geoms": [
@@ -120,7 +121,9 @@
         "polygon"
       ],
       "name": "amenity"
-    },
+    }
+  ],
+  "building_features": [
     {
       "tags": {
         "building": "*"
