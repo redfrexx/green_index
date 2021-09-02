@@ -35,7 +35,7 @@ def build_ohsome_filters(layer: dict):
     return ohsome_filter
 
 
-def download_features(bbox, timestamp, layers, outdir):
+def download_features(bbox, layers, outdir, timestamp=None):
     """
     Downloads all OSM highways for the specified timestamp and bbox
 

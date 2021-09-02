@@ -50,9 +50,6 @@ def init_logger(name, log_file_name=None):
     Set up a logger instance with stream and file logger
     :return:
     """
-    assert os.path.exists(
-        os.path.dirname(log_file_name)
-    ), "Error during logger setup: Directory of log file does not exist."
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter(
@@ -66,6 +63,9 @@ def init_logger(name, log_file_name=None):
     logger.addHandler(streamhandler)
     # Log file handler
     if log_file_name:
+        assert os.path.exists(
+            os.path.dirname(log_file_name)
+        ), "Error during logger setup: Directory of log file does not exist."
         filehandler = logging.FileHandler(filename=log_file_name)
         filehandler.setLevel(logging.INFO)
         filehandler.setFormatter(formatter)
