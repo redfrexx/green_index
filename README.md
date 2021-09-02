@@ -6,7 +6,7 @@
 ### 1. Greenness calculation
 
 ```
-$ map_green.py -c config.json -g google_credentials.json
+$ calculate_greenness.py -a config_sample.json -g google_credentials_sample.json
 ```
 
 
@@ -35,13 +35,8 @@ optional arguments:
 
 ```
 
-It will download the highway features and calculate the index based on the provided data. It is possible to pass a
-
-* Raster: the mean value of all cells within each highways buffer will be calculated
-* Vector: the number of features intersection the highways buffer will be calculated
-
 ```
-$ calculate_index.py -b 13.7176,51.0298,13.7957,51.0731 -r green.tif -w 20
+$ calculate_index.py -b 13.7176,51.0298,13.7957,51.0731 -r green.tif -w 20 -o index
 ```
 
 ```
