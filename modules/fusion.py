@@ -100,13 +100,21 @@ def fuse_masses(mass1, mass2):
     return both_masses["fused"]
 
 
-def fuse(aoi_name, config, lu_polygons_file):
+def fuse(config):
     """
     Fuses information from OSM and Sentinel-2 on greenness
     :param aoi_name:
     :param config:
     :return:
     """
+
+    aoi_name = config["name"]
+    lu_polygons_file = os.path.join(
+        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons.shp"
+    )
+    lu_polygons_file_fused = os.path.join(
+        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons_final.shp"
+    )
 
     lu_polygons = gpd.read_file(lu_polygons_file)
     lu_polygons = lu_polygons
@@ -135,5 +143,7 @@ def fuse(aoi_name, config, lu_polygons_file):
     # class_ndvi_osm_geo = class_ndvi_osm_geo.join(class_ndvi, rsuffix="_ndvi")
 
     class_ndvi_osm_geo.crs = lu_polygons.crs
+
+    class_ndvi_osm_geo.to_file(lu_polygons_file_fused)
 
     return class_ndvi_osm_geo

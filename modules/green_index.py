@@ -8,49 +8,9 @@ __email__ = "christina.ludwig@uni-heidelberg.de"
 import fiona
 import geopandas as gpd
 from rasterstats import zonal_stats
-from shapely.geometry import box
 import rasterio as rio
 import pandas as pd
 import os
-import subprocess
-import numpy as np
-from modules.utils import load_config
-
-
-def rasterize(lu_polygons_file, epsg):
-    """
-    Rasterize a polygons file
-    :param polygons_file:
-    :return:
-    """
-    # Convert green spaces from geojson to tif
-    lu_polygons_tif_temp = os.path.splitext(lu_polygons_file)[0] + "_tmp.tif"
-    cmd = [
-        "gdal_rasterize",
-        "-a",
-        "green",
-        "-of",
-        "GTiff",
-        "-tr",
-        "5",
-        "5",
-        "-ot",
-        "Float32",
-        lu_polygons_file,
-        lu_polygons_tif_temp,
-    ]
-    subprocess.call(cmd)
-    lu_polygons_tif_file = os.path.splitext(lu_polygons_file)[0] + ".tif"
-    cmd = [
-        "gdalwarp",
-        "-t_srs",
-        "EPSG:" + epsg,
-        lu_polygons_tif_temp,
-        lu_polygons_tif_file,
-    ]
-    subprocess.call(cmd)
-    os.unlink(lu_polygons_tif_temp)
-    return lu_polygons_tif_file
 
 
 def calc_green_index(width, output_dir, vector_file=None, raster_file=None):
@@ -61,8 +21,6 @@ def calc_green_index(width, output_dir, vector_file=None, raster_file=None):
     green_index_file = os.path.join(output_dir, "green_index.geojson")
     green_index_csv_file = os.path.join(output_dir, "green_index.csv")
     highway_file = os.path.join(output_dir, "highways.geojson")
-
-    # lu_polygons_tif_file = rasterize(lu_polygons_file, config["aois"][aoi_name]["epsg"])
 
     # Check if coordinate system is metric
     if raster_file:
@@ -79,7 +37,7 @@ def calc_green_index(width, output_dir, vector_file=None, raster_file=None):
         ), f"Coordinate references system of vector file is not projected (epsg:{crs.epsg})."
 
     # Buffer highways
-    highways = gpd.read_file(highway_file)
+    highways = gpd.read_file(highway_file).loc[:, ["@osmId", "geometry"]]
     highways_buffered = highways.copy().to_crs(crs)
     highways_buffered["geometry"] = highways_buffered.buffer(width)
 

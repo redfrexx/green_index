@@ -1,0 +1,20 @@
+{
+  "name": "test3",
+  "bbox": [
+    13.73613,
+    51.03524,
+    13.74978,
+    51.04396
+  ],
+  "epsg": "25832",
+  "timestamp": "2021-08-15",
+  "cloud_coverage": 5,
+  "ndvi_year": 2020,
+  "fuzzy_centers": {
+    "green": 0.71,
+    "mixed": 0.43,
+    "grey": 0.15,
+    "d": 0.094
+  },
+  "output_dir": "./data"
+}

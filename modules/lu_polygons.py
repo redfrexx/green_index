@@ -64,6 +64,7 @@ def polygons_from_traffic(in_dir):
     """
     # Load traffic features
     files = glob.glob(os.path.join(in_dir, "traffic", "*.geojson"))
+    assert len(files) > 0, f"No OSM features not found in {in_dir}"
     all_features = []
     for f in files:
         features = gpd.read_file(f)
@@ -92,7 +93,9 @@ def polygons_from_traffic(in_dir):
     poly_geoms = poly_features.apply(
         lambda x: pygeos.from_shapely(x["geometry"]), axis=1
     )
-    all_geoms = pd.concat([line_geoms_buf, poly_geoms], axis=0)
+    all_geoms = np.concatenate(
+        (np.array(poly_geoms).ravel(), np.array(line_geoms_buf).ravel())
+    )  # pd.concat([line_geoms_buf, poly_geoms], axis=0)
     all_geoms_union = pygeos.union_all(all_geoms)
 
     # Calculate symmetric difference
@@ -207,17 +210,23 @@ def clip_buildings(in_dir, lu_polygons):
     return lu_polygons.loc[~lu_polygons.is_empty]
 
 
-def generate_landuse_polygons(in_dir, epsg):
+def generate_landuse_polygons(config):
     """
     Generates landuse polygons based on traffic network and landuse features from OSM
     :return:
     """
-    street_blocks = polygons_from_traffic(in_dir)
+
+    osm_dir = os.path.join(config["output_dir"], config["name"], "osm")
+    out_file = os.path.join(
+        config["output_dir"], config["name"], f"{config['name']}_lu_polygons.shp"
+    )
+
+    street_blocks = polygons_from_traffic(osm_dir)
     # street_blocks.to_file(
     #    os.path.join(out_dir, f"street_blocks_{no}.geojson"), driver="GeoJSON"
     # )
 
-    lu_polygons = polygons_from_landuse(in_dir, street_blocks, epsg)
+    lu_polygons = polygons_from_landuse(osm_dir, street_blocks, config["epsg"])
     # landuse_blocks.to_file(
     #    os.path.join(out_dir, "landuse_blocks.geojson"), driver="GeoJSON"
     # )
@@ -227,10 +236,8 @@ def generate_landuse_polygons(in_dir, epsg):
     #    os.path.join(out_dir, "landuse_blocks_clean.geojson"), driver="GeoJSON"
     # )
 
-    lu_polygons_no_building = clip_buildings(in_dir, lu_polygons_clean)
-    # landuse_polygons.to_file(os.path.join(output_dir, aoi_name, "targets_with_buildings.geojson"), driver="GeoJSON")
-
-    return lu_polygons_no_building
+    lu_polygons_no_building = clip_buildings(osm_dir, lu_polygons_clean)
+    lu_polygons_no_building.to_file(out_file)
 
 
 if __name__ == "__main__":

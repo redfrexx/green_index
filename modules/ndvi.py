@@ -15,7 +15,7 @@ import logging
 import json
 import subprocess
 
-from modules.utils import split_bbox, load_config
+from modules.utils import split_bbox, load_config, create_subfolder
 
 
 def get_filename_from_cd(cd):
@@ -45,7 +45,7 @@ def create_ee_polygon(bbox):
     )
 
 
-def ndvi(aoi_name, config, credentials, output_dir):
+def ndvi(config, google_credentials):
     """
     Calculates a NDVI max composite using Google Earth Engine
 
@@ -57,14 +57,15 @@ def ndvi(aoi_name, config, credentials, output_dir):
     logger = logging.getLogger("root." + __name__)
     logger.info("Calculating NDVI ...")
 
-    # Preparation ---------------------------------------------------------------------
     # Read config file
-    bbox = config["aois"][aoi_name]["bbox"]
-    year = config["aois"][aoi_name]["ndvi_year"]
+    aoi_name = config["name"]
+    bbox = config["bbox"]
+    year = config["ndvi_year"]
     cloudcov = config["cloud_coverage"]
     start_date = f"{year}-01-01"
     end_date = f"{year}-12-31"
-    target_crs = "epsg:{0}".format(config["aois"][aoi_name]["epsg"])
+    target_crs = "epsg:{0}".format(config["epsg"])
+    output_dir = create_subfolder(config["output_dir"], f"{aoi_name}/ndvi")
 
     # bbox in tiles
     bbox_tiles = split_bbox(bbox, (0.25, 0.25))
@@ -74,7 +75,8 @@ def ndvi(aoi_name, config, credentials, output_dir):
 
         # Create polygon for AOI
         credentials = ee.ServiceAccountCredentials(
-            credentials["service_account"], credentials["service_account_json"]
+            google_credentials["service_account"],
+            google_credentials["service_account_json"],
         )
         ee.Initialize(credentials=credentials)
         coords, region = create_ee_polygon(bbox)

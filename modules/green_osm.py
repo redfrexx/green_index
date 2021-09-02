@@ -142,7 +142,7 @@ def read_ndvi(ndvi_dir, aoi_name):
     return [ndvi, affine, crs, nodata]
 
 
-def greenness_of_osm_tags(aoi_name, config, ndvi_dir, lu_polygons_file):
+def greenness_of_osm_tags(config):
     """
     Compute the greenness of OSM tags
 
@@ -156,10 +156,18 @@ def greenness_of_osm_tags(aoi_name, config, ndvi_dir, lu_polygons_file):
     logger.info("Deriving belief about greenness of OSM tags ...")
 
     # Read config parameters
-    green_c = config["aois"][aoi_name]["fuzzy_centers"]["green"]
-    mixed_c = config["aois"][aoi_name]["fuzzy_centers"]["mixed"]
-    grey_c = config["aois"][aoi_name]["fuzzy_centers"]["grey"]
-    d = config["aois"][aoi_name]["fuzzy_centers"]["d"]
+    green_c = config["fuzzy_centers"]["green"]
+    mixed_c = config["fuzzy_centers"]["mixed"]
+    grey_c = config["fuzzy_centers"]["grey"]
+    d = config["fuzzy_centers"]["d"]
+    aoi_name = config["name"]
+    ndvi_dir = os.path.join(config["output_dir"], config["name"], "ndvi")
+    lu_polygons_file = os.path.join(
+        config["output_dir"], config["name"], f"{aoi_name}_lu_polygons.shp"
+    )
+    out_file = os.path.join(
+        config["output_dir"], config["name"], aoi_name + "_green_tags.csv"
+    )
 
     # Read NDVI file
     ndvi, affine, crs, nodata = read_ndvi(ndvi_dir, aoi_name)
@@ -213,15 +221,24 @@ def greenness_of_osm_tags(aoi_name, config, ndvi_dir, lu_polygons_file):
     tag_greenness_df.columns = ["green", "grey", "green_grey", "npixels"]
     tag_greenness_df.index.name = "tag"
 
+    tag_greenness_df.to_csv(out_file)
+
     return tag_greenness_df
 
 
-def green_from_osm(lu_polygons_file, green_tags_file):
+def green_from_osm(config):
     """
     Assigns evidence for green, non_green, either to each polygon
     :param config:
     :return:
     """
+
+    lu_polygons_file = os.path.join(
+        config["output_dir"], config["name"], f"{config['name']}_lu_polygons.shp"
+    )
+    green_tags_file = os.path.join(
+        config["output_dir"], config["name"], f"{config['name']}_green_tags.csv"
+    )
 
     # Load lookup table for osm tags and greenness
     green_tags = pd.read_csv(green_tags_file).set_index("tag")
@@ -243,7 +260,7 @@ def green_from_osm(lu_polygons_file, green_tags_file):
             ("g_osm", "n_osm", "gn_osm", "nsamples"),
         ] = (green, grey, green_grey, nsamples)
 
-    return lu_polygons
+    lu_polygons.to_file(lu_polygons_file)
 
 
 if __name__ == "__main__":

@@ -27,23 +27,23 @@ def create_subfolder(out_dir: str, name: str):
     return new_subfolder
 
 
-def check_config(config, aoi_name):
+def check_config(config):
     """
     Check for missing parameters in config file
     :return:
     """
-    # Check general parameters
-    general_parameters = ["output_dir", "init_timestamp"]
-    for par in general_parameters:
+    parameters = [
+        "output_dir",
+        "timestamp",
+        "name",
+        "bbox",
+        "epsg",
+        "cloud_coverage",
+        "ndvi_year",
+        "output_dir",
+    ]
+    for par in parameters:
         assert par in config.keys(), f"Parameter '{par}' missing in config file."
-    assert aoi_name in config["aois"], f"AOI '{aoi_name}' not found in config file"
-
-    # Check AOI parameters
-    aoi_parameters = ["timestamp"]
-    for par in aoi_parameters:
-        assert (
-            par in config["aois"][aoi_name].keys()
-        ), f"Parameter 'aois/{aoi_name}/{par}' missing in config file."
 
 
 def init_logger(name, log_file_name=None):

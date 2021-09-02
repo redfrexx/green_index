@@ -49,20 +49,26 @@ def calc_ndvi_stats(targets_df, ndvi, affine):
     return ids, ndvi_values
 
 
-def green_from_ndvi(aoi_name, config, ndvi_dir, lu_polygons_file):
+def green_from_ndvi(config):
     """
     Fuses evidence from multiple sources (OSM, NDVI, OSM context)
     :param config:
     :return:
     """
 
+    aoi_name = config["name"]
+    lu_polygons_file = os.path.join(
+        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons.shp"
+    )
+    ndvi_dir = os.path.join(config["output_dir"], aoi_name, "ndvi")
+
     logger = logging.getLogger("root." + __name__)
 
     # Input parameters from config file ------------------
-    green_c = config["aois"][aoi_name]["fuzzy_centers"]["green"]
-    mixed_c = config["aois"][aoi_name]["fuzzy_centers"]["mixed"]
-    grey_c = config["aois"][aoi_name]["fuzzy_centers"]["grey"]
-    d = config["aois"][aoi_name]["fuzzy_centers"]["d"]
+    green_c = config["fuzzy_centers"]["green"]
+    mixed_c = config["fuzzy_centers"]["mixed"]
+    grey_c = config["fuzzy_centers"]["grey"]
+    d = config["fuzzy_centers"]["d"]
 
     green_old_min = mixed_c - d
     green_old_max = green_c
@@ -116,7 +122,7 @@ def green_from_ndvi(aoi_name, config, ndvi_dir, lu_polygons_file):
     lu_polygons_ndvi["gn_ndvi"].replace(np.nan, 1, inplace=True)
     lu_polygons_ndvi = lu_polygons_ndvi.round(2)
 
-    return gpd.GeoDataFrame(lu_polygons_ndvi)
+    gpd.GeoDataFrame(lu_polygons_ndvi).to_file(lu_polygons_file)
 
 
 if __name__ == "__main__":
