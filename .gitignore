@@ -1,0 +1,7 @@
+config/google_credentials.json
+config/quickstart-1555235678379-cc5606b37ed1.json
+__pycache__
+.idea
+.ipynb_checkpoints
+.pytest_cache
+extra
