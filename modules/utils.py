@@ -12,6 +12,7 @@ import json
 import pygeos
 import numpy as np
 import math
+import subprocess
 
 
 def create_subfolder(out_dir: str, name: str):
@@ -54,7 +55,7 @@ def init_logger(name, log_file_name=None):
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%m/%d/%Y %I:%M:%S",
+        datefmt="%m-%d-%Y %I:%M:%S",
     )
     # Add stream handler
     streamhandler = logging.StreamHandler()
@@ -150,3 +151,42 @@ def split_bbox(bbox, tile_size):
                 6
             )
         )
+
+
+def rasterize(lu_polygons_file, column, epsg=None):
+    """
+    Rasterize a polygons file
+    :param polygons_file:
+    :return:
+    """
+    lu_polygons_tif_file = os.path.splitext(lu_polygons_file)[0] + ".tif"
+    lu_polygons_tif_temp = os.path.splitext(lu_polygons_file)[0] + "_tmp.tif"
+    cmd = [
+        "gdal_rasterize",
+        "-a",
+        column,
+        "-of",
+        "GTiff",
+        "-tr",
+        "5",
+        "5",
+        "-ot",
+        "Float32",
+        lu_polygons_file,
+        lu_polygons_tif_temp,
+    ]
+    subprocess.call(cmd)
+
+    if epsg:
+        cmd = [
+            "gdalwarp",
+            "-t_srs",
+            "EPSG:" + epsg,
+            lu_polygons_tif_temp,
+            lu_polygons_tif_file,
+        ]
+        subprocess.call(cmd)
+        os.unlink(lu_polygons_tif_temp)
+    else:
+        os.rename(lu_polygons_tif_temp, lu_polygons_tif_file)
+    return lu_polygons_tif_file

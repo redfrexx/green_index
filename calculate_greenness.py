@@ -21,6 +21,7 @@ from modules.utils import (
     check_config,
     load_config,
     init_logger,
+    rasterize,
 )
 
 
@@ -44,7 +45,7 @@ if __name__ == "__main__":
     run_green_osm = False
     run_green_s2 = False
     run_fusion = False
-    run_green_index = True
+    run_rasterization = True
 
     # Load configuration parameters
     config = load_config(config_file)
@@ -205,12 +206,12 @@ if __name__ == "__main__":
             logger.exception("Error during greenness fusion:")
             sys.exit(3)
 
-    if run_green_index:
+    if run_rasterization:
         try:
             lu_polygons_file = os.path.join(
                 out_dir_aoi, f"{aoi_name}_lu_polygons_final.shp"
             )
-            calc_green_index(aoi_name, config, lu_polygons_file)
+            rasterize(lu_polygons_file, column="green")
         except Exception:
             logger.exception("Error during green index calculation:")
             sys.exit(3)
