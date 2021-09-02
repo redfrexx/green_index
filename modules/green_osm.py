@@ -118,17 +118,19 @@ def prob_mass_grey_from_ndvi(ndvi, old_min=0.1, old_max=0.7):
         return 1 - (((ndvi - old_min) * new_range) / old_range) + new_min
 
 
-def read_ndvi(out_dir, aoi_name):
+def read_ndvi(ndvi_dir, aoi_name):
     """
     Searches and reads in ndvi file
     :return:
     """
     # Search NDVI file
-    ndvi_files = glob.glob(os.path.join(out_dir, "ndvi", aoi_name + "*ndvi_s2.tif"))
+    ndvi_files = glob.glob(os.path.join(ndvi_dir, aoi_name + "*ndvi.tif"))
     if len(ndvi_files) == 0:
-        return 1, "No NDVI file found."
+        raise FileNotFoundError("No NDVI file found.")
     elif len(ndvi_files) > 1:
-        return 1, "Too many matching NDVI files found."
+        raise FileNotFoundError(
+            "Too many NDVI files found: {0}".format(",".join(ndvi_files))
+        )
 
     # Open NDVI file
     with rio.open(ndvi_files[0]) as src:
@@ -137,10 +139,10 @@ def read_ndvi(out_dir, aoi_name):
         crs = src.crs
         nodata = src.nodatavals[0]
 
-    return 0, [ndvi, affine, crs, nodata]
+    return [ndvi, affine, crs, nodata]
 
 
-def greenness_of_osm_tags(aoi_name, config):
+def greenness_of_osm_tags(aoi_name, config, ndvi_dir, lu_polygons_file):
     """
     Compute the greenness of OSM tags
 
@@ -154,27 +156,20 @@ def greenness_of_osm_tags(aoi_name, config):
     logger.info("Deriving belief about greenness of OSM tags ...")
 
     # Read config parameters
-    out_dir_green = os.path.join(config["output_dir"], aoi_name, "green")
-    green_c = config["aois"][aoi_name]["fuzzy_centers"]["s2"]["green"]
-    mixed_c = config["aois"][aoi_name]["fuzzy_centers"]["s2"]["mixed"]
-    grey_c = config["aois"][aoi_name]["fuzzy_centers"]["s2"]["grey"]
-    d = config["aois"][aoi_name]["fuzzy_centers"]["s2"]["d"]
-    targets_file = config["aois"][aoi_name]["target_geoms"]
+    green_c = config["aois"][aoi_name]["fuzzy_centers"]["green"]
+    mixed_c = config["aois"][aoi_name]["fuzzy_centers"]["mixed"]
+    grey_c = config["aois"][aoi_name]["fuzzy_centers"]["grey"]
+    d = config["aois"][aoi_name]["fuzzy_centers"]["d"]
 
     # Read NDVI file
-    success, result = read_ndvi(out_dir_green, aoi_name)
-    if success == 1:
-        logger.critical(result)
-        return 1
-    ndvi, affine, crs, nodata = result
+    ndvi, affine, crs, nodata = read_ndvi(ndvi_dir, aoi_name)
 
     # Read landuse polygons
-    assert os.path.exists(targets_file), "{0} not found.".format(targets_file)
-    targets_df = gpd.read_file(targets_file).to_crs({"init": str(crs)})
+    targets_df = gpd.read_file(lu_polygons_file).to_crs({"init": str(crs)})
 
     # Unique land use tags
-    targets_df["TARGET_type"].replace(np.nan, "None", inplace=True)
-    osm_tags = targets_df.TARGET_type.unique()
+    targets_df["tags"].replace(np.nan, "None", inplace=True)
+    osm_tags = targets_df["tags"].unique()
 
     # Buffer targets inwards
     targets_df.geometry = targets_df.geometry.buffer(buffer)
@@ -193,7 +188,7 @@ def greenness_of_osm_tags(aoi_name, config):
 
         print(tag)
         # Filter features by tag and remove empty geometries
-        targets_with_tag = targets_df.loc[targets_df["TARGET_type"] == tag]
+        targets_with_tag = targets_df.loc[targets_df["tags"] == tag]
 
         # Extract NDVI values for tag
         ndvi_values = get_ndvi_values(targets_with_tag, ndvi, nodata, affine)
@@ -218,67 +213,37 @@ def greenness_of_osm_tags(aoi_name, config):
     tag_greenness_df.columns = ["green", "grey", "green_grey", "npixels"]
     tag_greenness_df.index.name = "tag"
 
-    tag_greenness_df.to_csv(
-        os.path.join(out_dir_green, aoi_name + "_greenness_osm_tags.csv")
-    )
+    return tag_greenness_df
 
 
-def green_from_osm(aoi_name, config):
+def green_from_osm(lu_polygons_file, green_tags_file):
     """
     Assigns evidence for green, non_green, either to each polygon
     :param config:
     :return:
     """
-    out_dir_green = os.path.join(config["output_dir"], aoi_name, "green")
 
     # Load lookup table for osm tags and greenness
-    tag_doc_file = os.path.join(out_dir_green, aoi_name + "_greenness_osm_tags.csv")
-    assert os.path.exists(
-        tag_doc_file
-    ), "OSM - Greenness Lookup file does not exist: {0}".format(
-        os.path.abspath(tag_doc_file)
-    )
-    tag_evidence = pd.read_csv(tag_doc_file).set_index("tag")
+    green_tags = pd.read_csv(green_tags_file).set_index("tag")
 
     # Read target parts and clip to bbox
-    polygon_file = config["aois"][aoi_name]["target_geoms"]
-    bbox_geom = box(*config["aois"][aoi_name]["bbox"])
-    targets_df = gpd.read_file(polygon_file, bbox=bbox_geom)
+    lu_polygons = gpd.read_file(lu_polygons_file)
 
-    # Clip to bounding box
-    bbox_df = gpd.GeoDataFrame({"geometry": [bbox_geom]}, crs={"init": "epsg:4326"})
-    targets_df = gpd.overlay(bbox_df, targets_df, how="intersection")
+    # Dataframe to store beliefs
+    lu_polygons["g_osm"] = 0
+    lu_polygons["n_osm"] = 0
+    lu_polygons["gn_osm"] = 1
+    lu_polygons["nsamples"] = 0
 
-    targets_df = targets_df.loc[:, ("TARGET_ID", "TARGET_type", "geometry")]
-
-    # Add empty columns
-    empty_green_df = pd.DataFrame(
-        {"green": 0, "grey": 0, "green_grey": 1.0, "nsamples": 0},
-        dtype="float16",
-        index=targets_df.index,
-    )
-    targets_df = pd.concat([targets_df, empty_green_df], axis=1, join="inner")
-    targets_df["nsamples"] = targets_df["nsamples"].astype("int32")
-
-    for tag in tag_evidence.index:
+    for tag in green_tags.index:
         print(tag)
-        green, grey, green_grey, nsamples = tag_evidence.loc[tag]
-        targets_df.loc[
-            (targets_df["TARGET_type"] == tag),
-            ("green", "grey", "green_grey", "nsamples"),
-        ] = (green, grey, green_grey, int(nsamples))
+        green, grey, green_grey, nsamples = green_tags.loc[tag]
+        lu_polygons.loc[
+            (lu_polygons["tags"] == tag),
+            ("g_osm", "n_osm", "gn_osm", "nsamples"),
+        ] = (green, grey, green_grey, nsamples)
 
-    # Write to geojson
-    # features_json = targets_df.to_json(na="drop")
-    # outfile = os.path.join(out_dir_green, aoi_name + "_greenness_osm.geojson")
-    # with open(outfile, "w") as src:
-    #    src.write(features_json)
-
-    # Write to csv
-    outfile = os.path.join(out_dir_green, aoi_name + "_green_osm.csv")
-    pd.DataFrame(
-        targets_df.loc[:, ["TARGET_ID", "green", "grey", "green_grey"]]
-    ).to_csv(outfile, index=False)
+    return lu_polygons
 
 
 if __name__ == "__main__":

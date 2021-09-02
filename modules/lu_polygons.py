@@ -8,7 +8,7 @@ __email__ = "christina.ludwig@uni-heidelberg.de"
 
 import pygeos
 import geopandas as gpd
-from modules.utils.project_utils import calc_compactness
+from modules.utils import calc_compactness
 from shapely.geometry import box
 import glob
 import os
@@ -170,7 +170,7 @@ def clean_polygons(lu_polygons):
     lu_polygons = lu_polygons.loc[
         ~((lu_polygons.area < 2500) & (lu_polygons.compactness < 0.05))
     ]
-    return lu_polygons
+    return lu_polygons.drop("compactness", axis=1)
 
 
 def clip_buildings(in_dir, lu_polygons):

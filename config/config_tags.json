@@ -62,7 +62,8 @@
           "industrial",
           "retail",
           "parking",
-          "orchard"
+          "orchard",
+          "recreation_ground"
         ]
       },
       "geoms": [
@@ -88,10 +89,10 @@
       "tags": {
         "leisure": [
           "park",
-          "recreation_ground",
           "sports_centre",
           "pitch",
-          "playground"
+          "playground",
+          "recreation_ground"
         ]
       },
       "geoms": [

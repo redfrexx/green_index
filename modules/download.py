@@ -7,8 +7,35 @@ __email__ = "christina.ludwig@uni-heidelberg.de"
 
 import os
 from ohsome import OhsomeClient, OhsomeException
-from modules.utils import build_ohsome_filters
 from modules.utils import load_config
+
+
+def build_ohsome_filters(filter_items: list):
+    """
+    Builds the filter string based a dictionary of tags
+    :return:
+    """
+    filters = {}
+    for item in filter_items:
+        if "geoms" in item.keys():
+            geom_filter = " or ".join(["geometry:{0}".format(i) for i in item["geoms"]])
+        if "types" in item.keys():
+            type_filter = " or ".join(["type:{0}".format(i) for i in item["types"]])
+        for key, values in item["tags"].items():
+            if isinstance(values, list):
+                tag_filter = "{0} in ({1})".format(key, ", ".join(values))
+            elif isinstance(values, str):
+                tag_filter = f"{key}={values}"
+            else:
+                raise TypeError(f"{type(values)} not supported for tag values")
+            filter = tag_filter
+            if "geoms" in item.keys():
+                filter += f" and ({geom_filter})"
+            if "types" in item.keys():
+                filter += f" and ({type_filter})"
+
+            filters[item["name"]] = filter
+    return filters
 
 
 def download_features(bbox, timestamp, tags, outdir):
@@ -33,7 +60,7 @@ def download_features(bbox, timestamp, tags, outdir):
         except OhsomeException as e:
             print(e)
             continue
-        response.to_json(os.path.join(outdir, "{0}.geojson".format(name)))
+        response.to_json(os.path.join(outdir, f"{name}.geojson"))
 
 
 if __name__ == "__main__":

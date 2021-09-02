@@ -18,31 +18,7 @@ import glob
 import rasterio as rio
 
 import modules.utils as utils
-from modules.green_osm import calculate_probability_mass
-
-
-def read_ndvi(in_dir=None, aoi_name=None, ndvi_file=None):
-    """
-    Searches and reads in ndvi file
-    :return:
-    """
-    if ndvi_file is None:
-        # Search NDVI file
-        ndvi_files = glob.glob(os.path.join(in_dir, "ndvi", aoi_name + "_ndvi_s2.tif"))
-        if len(ndvi_files) == 0:
-            return 1, "No NDVI file found."
-        elif len(ndvi_files) > 1:
-            return 1, "Too many matching NDVI files found."
-        ndvi_file = ndvi_files[0]
-
-    # Open NDVI file
-    with rio.open(ndvi_file) as src:
-        ndvi = src.read(1)
-        affine = src.transform
-        crs = src.crs
-        nodata = src.nodatavals[0]
-
-    return 0, [ndvi, affine, crs, nodata]
+from modules.green_osm import calculate_probability_mass, read_ndvi
 
 
 def calc_ndvi_stats(targets_df, ndvi, affine):
@@ -73,7 +49,7 @@ def calc_ndvi_stats(targets_df, ndvi, affine):
     return ids, ndvi_values
 
 
-def green_from_ndvi(aoi_name, config, sensor="s2"):
+def green_from_ndvi(aoi_name, config, ndvi_dir, lu_polygons_file):
     """
     Fuses evidence from multiple sources (OSM, NDVI, OSM context)
     :param config:
@@ -83,13 +59,10 @@ def green_from_ndvi(aoi_name, config, sensor="s2"):
     logger = logging.getLogger("root." + __name__)
 
     # Input parameters from config file ------------------
-    polygon_file = os.path.abspath(config["aois"][aoi_name]["target_geoms"])
-    out_dir_green = os.path.join(config["output_dir"], aoi_name, "green")
-
-    green_c = config["aois"][aoi_name]["fuzzy_centers"][sensor]["green"]
-    mixed_c = config["aois"][aoi_name]["fuzzy_centers"][sensor]["mixed"]
-    grey_c = config["aois"][aoi_name]["fuzzy_centers"][sensor]["grey"]
-    d = config["aois"][aoi_name]["fuzzy_centers"][sensor]["d"]
+    green_c = config["aois"][aoi_name]["fuzzy_centers"]["green"]
+    mixed_c = config["aois"][aoi_name]["fuzzy_centers"]["mixed"]
+    grey_c = config["aois"][aoi_name]["fuzzy_centers"]["grey"]
+    d = config["aois"][aoi_name]["fuzzy_centers"]["d"]
 
     green_old_min = mixed_c - d
     green_old_max = green_c
@@ -97,33 +70,18 @@ def green_from_ndvi(aoi_name, config, sensor="s2"):
     grey_old_max = mixed_c + d
 
     # Read NDVI file
-    if sensor == "s2":
-        success, result = read_ndvi(in_dir=out_dir_green, aoi_name=aoi_name)
-        buffer = -5
-    elif sensor == "vhr":
-        success, result = read_ndvi(ndvi_file=config["aois"][aoi_name]["vhr"])
-        buffer = -0.5
-    else:
-        print("unknown sensor")
-
-    if success == 1:
-        logger.critical(result)
-        exit(1)
-    ndvi, affine, crs, nodata = result
-
-    # Bounding box for reading polygons
-    bbox_geom = box(*config["aois"][aoi_name]["bbox"])
+    ndvi, affine, crs, nodata = read_ndvi(ndvi_dir=ndvi_dir, aoi_name=aoi_name)
+    buffer = -5
 
     # Read Targets
     logger.info("Reading data...")
-    targets_df = gpd.read_file(polygon_file, bbox=bbox_geom)
-    targets_df = targets_df.loc[:, ("TARGET_ID", "geometry")]
+    lu_polygons = gpd.read_file(lu_polygons_file)
 
-    # Clip to bounding box
-    bbox_df = gpd.GeoDataFrame({"geometry": [bbox_geom]}, crs={"init": "epsg:4326"})
-    targets_df = gpd.overlay(bbox_df, targets_df, how="intersection")
+    # Delete columns for beliefs if they already exist
+    if "green_osm" in lu_polygons.columns:
+        lu_polygons.drop(["g_ndvi", "n_ndvi", "gn_ndvi"], axis=1, inplace=True)
 
-    targets_df_small = targets_df.copy().to_crs({"init": str(crs)})
+    targets_df_small = lu_polygons.copy().to_crs({"init": str(crs)})
     targets_df_small["geometry"] = targets_df_small.buffer(buffer)
     targets_df_small = targets_df_small[
         targets_df_small.geometry.is_valid & ~targets_df_small.geometry.is_empty
@@ -144,25 +102,21 @@ def green_from_ndvi(aoi_name, config, sensor="s2"):
         )
         for id, vals in zip(ids, ndvi_values)
     }
-    targets_ndvi = pd.DataFrame(prob_masses).T
-    targets_ndvi.columns = ["green", "grey", "green_grey"]
+    green_ndvi = pd.DataFrame(prob_masses).T
+    green_ndvi.columns = ["g_ndvi", "n_ndvi", "gn_ndvi"]
 
-    targets_out = targets_df.loc[:, ["TARGET_ID"]].join(targets_ndvi, how="left")
-    targets_out = pd.DataFrame(targets_out).loc[~targets_out.index.isna()]
-    targets_out["green"].replace(np.nan, 0, inplace=True)
-    targets_out["grey"].replace(np.nan, 0, inplace=True)
-    targets_out["green_grey"].replace(np.nan, 1, inplace=True)
+    lu_polygons_ndvi = lu_polygons.join(green_ndvi, how="left")
+    lu_polygons_ndvi = pd.DataFrame(lu_polygons_ndvi).loc[
+        ~lu_polygons_ndvi.index.isna()
+    ]
 
-    targets_out.set_index("TARGET_ID", inplace=True)
-    targets_out = targets_out.round(2)
+    # Set belief of polygons which do not contain any reliable information about greenness from the sentinel-2 image
+    lu_polygons_ndvi["g_ndvi"].replace(np.nan, 0, inplace=True)
+    lu_polygons_ndvi["n_ndvi"].replace(np.nan, 0, inplace=True)
+    lu_polygons_ndvi["gn_ndvi"].replace(np.nan, 1, inplace=True)
+    lu_polygons_ndvi = lu_polygons_ndvi.round(2)
 
-    # Export to file
-    logger.info("Writing to file...")
-    outfile = os.path.join(
-        out_dir_green,
-        aoi_name + "_green_{0}.csv".format(os.path.basename(sensor).split(".")[0]),
-    )
-    targets_out.to_csv(outfile)
+    return gpd.GeoDataFrame(lu_polygons_ndvi)
 
 
 if __name__ == "__main__":

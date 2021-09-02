@@ -17,18 +17,10 @@
       "epsg": "25832",
       "target_geoms": "/Users/chludwig/Data/meingruen/zielgeometrien/osm/v5.0/DD/final_dd_morph10m_validated_EPSG4326_v05.gdb",
       "fuzzy_centers": {
-        "s2": {
-          "green": 0.71,
-          "mixed": 0.43,
-          "grey": 0.15,
-          "d": 0.094
-        },
-        "vhr": {
-          "green": 0.42,
-          "mixed": 0.24,
-          "grey": 0.06,
-          "d": 0.06
-        }
+        "green": 0.71,
+        "mixed": 0.43,
+        "grey": 0.15,
+        "d": 0.094
       }
     },
     "test2": {
@@ -39,23 +31,14 @@
         13.7957,
         51.0731
       ],
-      "ndvi_year": 2019,
-      "timestamp": "2019-06-30",
+      "ndvi_year": 2020,
+      "timestamp": "2021-08-15",
       "epsg": "25832",
-      "target_geoms": "/Users/chludwig/Data/meingruen/zielgeometrien/osm/v5.0/DD/final_dd_morph10m_validated_EPSG4326_v05.gdb",
       "fuzzy_centers": {
-        "s2": {
-          "green": 0.71,
-          "mixed": 0.43,
-          "grey": 0.15,
-          "d": 0.094
-        },
-        "vhr": {
-          "green": 0.42,
-          "mixed": 0.24,
-          "grey": 0.06,
-          "d": 0.06
-        }
+        "green": 0.71,
+        "mixed": 0.43,
+        "grey": 0.15,
+        "d": 0.094
       }
     },
     "dresden": {

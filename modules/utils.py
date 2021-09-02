@@ -38,7 +38,7 @@ def check_config(config, aoi_name):
     assert aoi_name in config["aois"], f"AOI '{aoi_name}' not found in config file"
 
     # Check AOI parameters
-    aoi_parameters = ["target_geoms", "timestamp"]
+    aoi_parameters = ["timestamp"]
     for par in aoi_parameters:
         assert (
             par in config["aois"][aoi_name].keys()
@@ -97,25 +97,6 @@ def calc_compactness(features):
     area = pygeos.area(pygeos_geoms)
     perimeter = pygeos.length(pygeos_geoms)
     return (area * 4 * np.pi) / (perimeter * perimeter)
-
-
-def build_ohsome_filters(filter_items: list):
-    """
-    Builds the filter string based a dictionary of tags
-    :return:
-    """
-    filters = {}
-    for item in filter_items:
-        geom_filter = " or ".join(["geometry:{0}".format(i) for i in item["geoms"]])
-        for key, values in item["tags"].items():
-            if isinstance(values, list):
-                tag_filter = "{0} in ({1})".format(key, ", ".join(values))
-            elif isinstance(values, str):
-                tag_filter = f"{key}={values}"
-            else:
-                raise TypeError(f"{type(values)} not supported for tag values")
-            filters[item["name"]] = f"({tag_filter}) and ({geom_filter})"
-    return filters
 
 
 def split_bbox(bbox, tile_size):

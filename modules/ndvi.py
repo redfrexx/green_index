@@ -45,7 +45,7 @@ def create_ee_polygon(bbox):
     )
 
 
-def ndvi(aoi_name, config, credentials):
+def ndvi(aoi_name, config, credentials, output_dir):
     """
     Calculates a NDVI max composite using Google Earth Engine
 
@@ -62,18 +62,9 @@ def ndvi(aoi_name, config, credentials):
     bbox = config["aois"][aoi_name]["bbox"]
     year = config["aois"][aoi_name]["ndvi_year"]
     cloudcov = config["cloud_coverage"]
-    out_dir = config["output_dir"]
     start_date = f"{year}-01-01"
     end_date = f"{year}-12-31"
     target_crs = "epsg:{0}".format(config["aois"][aoi_name]["epsg"])
-
-    # Create output directory
-    out_dir_green = os.path.join(out_dir, aoi_name, "green")
-    if not os.path.exists(out_dir_green):
-        os.mkdir(out_dir_green)
-    out_dir_ndvi = os.path.join(out_dir_green, "ndvi")
-    if not os.path.exists(out_dir_ndvi):
-        os.mkdir(out_dir_ndvi)
 
     # bbox in tiles
     bbox_tiles = split_bbox(bbox, (0.25, 0.25))
@@ -100,7 +91,7 @@ def ndvi(aoi_name, config, credentials):
 
         # Write metadata of scenes to file
         scene_info_file = os.path.join(
-            out_dir_ndvi, "{0}_{1}_sentinel2_scenes.json".format(aoi_name, i)
+            output_dir, "{0}_{1}_scenes.json".format(aoi_name, i)
         )
         with open(scene_info_file, "w") as dst:
             info = json.dumps(images.getInfo(), indent=4)
@@ -128,12 +119,12 @@ def ndvi(aoi_name, config, credentials):
         )
         r = requests.get(out, allow_redirects=True)
         zip_file_name = get_filename_from_cd(r.headers.get("content-disposition"))
-        zip_file_path = os.path.join(out_dir_ndvi, zip_file_name)
+        zip_file_path = os.path.join(output_dir, zip_file_name)
         open(zip_file_path, "wb").write(r.content)
 
         # Unzip
         with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
-            zip_ref.extractall(out_dir_ndvi)
+            zip_ref.extractall(output_dir)
 
         # Delete zip file
         if os.path.exists(zip_file_path):
@@ -144,15 +135,15 @@ def ndvi(aoi_name, config, credentials):
 
         # Rename ndvi file
         ndvi_file = os.path.splitext(zip_file_path)[0] + ".NDVI.tif"
-        ndvi_file_new = os.path.join(out_dir_ndvi, f"{aoi_name}_ndvi_s2_{i}.tif")
+        ndvi_file_new = os.path.join(output_dir, f"{aoi_name}_ndvi_{i}.tif")
         os.rename(ndvi_file, ndvi_file_new)
         ndvi_file_names.append(ndvi_file_new)
 
-    # todo: merge ndvi files
-    ndvi_file = os.path.join(out_dir_ndvi, f"{aoi_name}_ndvi_s2.tif")
+    # merge ndvi files
+    ndvi_file = os.path.join(output_dir, f"{aoi_name}_ndvi.tif")
     cmd = ["gdal_merge.py", "-o", ndvi_file] + ndvi_file_names
     subprocess.call(cmd)
-
+    [os.unlink(f) for f in ndvi_file_names]
     logger.info("Calculating NDVI - done.")
 
 

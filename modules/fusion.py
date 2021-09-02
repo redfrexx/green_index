@@ -12,16 +12,13 @@ import numpy as np
 from pyds import MassFunction
 import pandas as pd
 
-GREEN_LABEL_DICT = {"green": "a", "grey": "b", "green_grey": "ab"}
-PUBLIC_LABEL_DICT = {"public": "a", "private": "b", "public_private": "ab"}
 
-
-def convert_to_mass(data, label_dict, adapt_masses=False):
+def convert_to_mass(data, adapt_masses=False):
     """
     Converts data frame to series of probability masses
     :return
     """
-    # Convert to masses
+    label_dict = {x: x.split("_")[0] for x in data.columns}
     return data.rename(columns=label_dict).apply(
         lambda row: as_MassFunction(row, adapt_masses=adapt_masses), axis=1
     )
@@ -36,31 +33,31 @@ def as_MassFunction(row, adapt_masses=True):
     row_cp = row.copy()
 
     if adapt_masses:
-        if row_cp["a"] > 0.95:
-            row_cp["ab"] = row_cp["ab"] + row_cp["a"] - 0.95
-            row_cp["a"] = 0.95
-        elif row_cp["b"] > 0.95:
-            row_cp["ab"] = row_cp["ab"] + row_cp["b"] - 0.95
-            row_cp["b"] = 0.95
+        if row_cp["g"] > 0.95:
+            row_cp["gn"] = row_cp["gn"] + row_cp["g"] - 0.95
+            row_cp["g"] = 0.95
+        elif row_cp["n"] > 0.95:
+            row_cp["gn"] = row_cp["gn"] + row_cp["n"] - 0.95
+            row_cp["n"] = 0.95
 
     return MassFunction(dict(row_cp))
 
 
 def classify_green(row):
     """
-    Classifies beliefs into green or grey
+    Classifies beliefs into green, grey or uncertain based on majority vote
     :returns
     """
-    uc_green = row.pl("a") - row.bel("a")
-    uc_grey = row.pl("b") - row.bel("b")
+    uc_green = row.pl("g") - row.bel("g")
+    uc_grey = row.pl("n") - row.bel("n")
     prob = row.pignistic()
-    if prob["a"] > prob["b"]:
+    if prob["g"] > prob["n"]:
         label = "green"
-    elif prob["a"] < prob["b"]:
+    elif prob["g"] < prob["n"]:
         label = "grey"
     else:
         label = "uncertain"
-    return uc_green, uc_grey, prob["a"], prob["b"], label
+    return uc_green, uc_grey, prob["g"], prob["n"], label
 
 
 def mass_to_class(mass):
@@ -73,11 +70,11 @@ def mass_to_class(mass):
         lambda x: classify_green(x["mass"]), axis=1, result_type="expand"
     )
     classified.columns = [
-        "uc_green",
-        "uc_grey",
-        "prob_green",
-        "prob_grey",
-        "pred_class",
+        "g_unc",
+        "n_unc",
+        "g_prob",
+        "n_prob",
+        "class",
     ]
 
     fused_mass = mass_df.apply(lambda r: dict(r["mass"]), axis=1, result_type="expand")
@@ -103,7 +100,7 @@ def fuse_masses(mass1, mass2):
     return both_masses["fused"]
 
 
-def fuse(aoi_name, config):
+def fuse(aoi_name, config, lu_polygons_file):
     """
     Fuses information from OSM and Sentinel-2 on greenness
     :param aoi_name:
@@ -111,36 +108,32 @@ def fuse(aoi_name, config):
     :return:
     """
 
-    green_results_dir = os.path.join(config["output_dir"], aoi_name, "green")
-    ndvi_s2_file = os.path.join(green_results_dir, f"{aoi_name}_green_s2.csv")
-    ndvi_osm_file = os.path.join(green_results_dir, f"{aoi_name}_green_osm.csv")
-    target_file = os.path.join(config["aois"][aoi_name]["target_geoms"])
+    lu_polygons = gpd.read_file(lu_polygons_file)
+    lu_polygons = lu_polygons
+    lu_polygons["area"] = lu_polygons.area
+    # lu_polygons["tags"].replace(np.nan, "None", inplace=True)
 
-    s2_data = pd.read_csv(ndvi_s2_file).set_index("TARGET_ID")
-    osm_data = pd.read_csv(ndvi_osm_file).set_index("TARGET_ID")
+    ndvi_beliefs = lu_polygons[["g_ndvi", "n_ndvi", "gn_ndvi"]]
+    osm_beliefs = lu_polygons[["g_osm", "n_osm", "gn_osm"]]
 
-    targets = gpd.read_file(target_file).set_index("TARGET_ID")
-    targets = targets.to_crs(epsg=config["aois"][aoi_name]["epsg"])
-    targets["area"] = targets.area
-    targets["TARGET_type"].replace(np.nan, "None", inplace=True)
+    # Convert data to mass functions
 
-    green_label_dict = {"green": "a", "grey": "b", "green_grey": "ab"}
+    ndvi_mass = convert_to_mass(ndvi_beliefs)
+    osm_mass = convert_to_mass(osm_beliefs)
 
-    s2_mass = convert_to_mass(s2_data, label_dict=green_label_dict)
-    osm_mass = convert_to_mass(osm_data, label_dict=green_label_dict)
+    ndvi_osm_mass = fuse_masses(ndvi_mass, osm_mass)
 
-    s2_osm_mass = fuse_masses(s2_mass, osm_mass)
+    # Classify based on beliefs
+    # class_ndvi = mass_to_class(ndvi_mass)
+    # class_osm = mass_to_class(osm_mass)
+    class_ndvi_osm = mass_to_class(ndvi_osm_mass)
 
-    class_s2 = mass_to_class(s2_mass)
-    class_osm = mass_to_class(osm_mass)
-    class_s2_osm = mass_to_class(s2_osm_mass)
-
-    class_s2_osm_geo = gpd.GeoDataFrame(class_s2_osm.join(targets.loc[:, "geometry"]))
-    class_s2_osm_geo = class_s2_osm_geo.join(class_osm, rsuffix="_osm")
-    class_s2_osm_geo = class_s2_osm_geo.join(class_s2, rsuffix="_s2")
-
-    class_s2_osm_geo.crs = targets.crs
-    class_s2_osm_geo.to_file(
-        os.path.join(config["output_dir"], aoi_name, "green", "greenness.shp"),
-        driver="ESRI Shapefile",
+    class_ndvi_osm_geo = gpd.GeoDataFrame(
+        class_ndvi_osm.join(lu_polygons.loc[:, "geometry"])
     )
+    # class_ndvi_osm_geo = class_ndvi_osm_geo.join(class_osm, rsuffix="_osm")
+    # class_ndvi_osm_geo = class_ndvi_osm_geo.join(class_ndvi, rsuffix="_ndvi")
+
+    class_ndvi_osm_geo.crs = lu_polygons.crs
+
+    return class_ndvi_osm_geo

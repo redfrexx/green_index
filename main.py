@@ -8,8 +8,6 @@ __email__ = "christina.ludwig@uni-heidelberg.de"
 import os
 import datetime as dt
 import sys
-import traceback
-
 from modules.download import download_features
 from modules.green_osm import greenness_of_osm_tags, green_from_osm
 from modules.green_ndvi import green_from_ndvi
@@ -34,19 +32,17 @@ if __name__ == "__main__":
     config_file_tags = "./config/config_tags.json"
     credentials_file = "./config/google_credentials.json"
 
-    # MODULES TO BE EXECUTED
+    # Set modules to be executed to True
     run_download_traffic = False
     run_download_landuse = False
     run_download_buildings = False
-    run_landuse_polygons = True
+    run_landuse_polygons = False
     run_ndvi = False
-    run_green_from_osm = False
-    run_green_from_s2 = False
-    run_fusion = False
+    run_green_osm_tags = False
+    run_green_osm = False
+    run_green_s2 = False
+    run_fusion = True
     run_green_index = False
-
-    # Preparation
-    # ----------------------------
 
     # Load configuration parameters
     config = load_config(config_file)
@@ -80,8 +76,8 @@ if __name__ == "__main__":
                 tags=config_tags["landuse_features"],
                 outdir=landuse_feature_dir,
             )
-        except Exception as e:
-            logger.critical(e.with_traceback())
+        except Exception:
+            logger.exception("Error during download of landuse features:")
             sys.exit(1)
 
     if run_download_traffic:
@@ -93,8 +89,8 @@ if __name__ == "__main__":
                 tags=config_tags["traffic_features"],
                 outdir=traffic_feature_dir,
             )
-        except Exception as e:
-            logger.critical(e.with_traceback())
+        except Exception:
+            logger.exception("Error during download of traffic features:")
             sys.exit(1)
 
     if run_download_buildings:
@@ -106,8 +102,8 @@ if __name__ == "__main__":
                 tags=config_tags["building_features"],
                 outdir=building_feature_dir,
             )
-        except Exception as e:
-            logger.critical(e.with_traceback())
+        except Exception:
+            logger.exception("Error during download of buildings:")
             sys.exit(1)
 
     if run_landuse_polygons:
@@ -115,49 +111,75 @@ if __name__ == "__main__":
             feature_dir = os.path.join(out_dir_aoi, "ohsome")
             lu_polygons_dir = create_subfolder(out_dir_aoi, "polygons")
             lu_polygons = generate_landuse_polygons(
-                feature_dir, epsg=config["aois"][aoi_name]["epsg"]
+                in_dir=feature_dir, epsg=config["aois"][aoi_name]["epsg"]
             )
             lu_polygons.to_file(
-                os.path.join(lu_polygons_dir, "lu_polygons.geojson"), driver="GeoJSON"
+                os.path.join(lu_polygons_dir, f"{aoi_name}_lu_polygons.shp")
             )
-        except Exception as e:
-            logger.critical(e)
-            logger.critical(traceback.print_exc())
+        except Exception:
+            logger.exception("Error during generation of landuse polygons:")
             sys.exit(1)
 
     if run_ndvi:
+        ndvi_dir = create_subfolder(out_dir_aoi, "ndvi")
         try:
             credentials = load_config(credentials_file)
-            ndvi(aoi_name, config, credentials)
-        except Exception as err:
-            logger.critical(err)
-            sys.exit(3)
+            ndvi(aoi_name, config, credentials, ndvi_dir)
+        except Exception:
+            logger.exception("Error during generation of NDVI calculation:")
+            sys.exit(1)
 
-    if run_green_from_osm:
+    if run_green_osm_tags:
+        ndvi_dir = create_subfolder(out_dir_aoi, "ndvi")
+        lu_polygons_file = os.path.join(out_dir_aoi, f"{aoi_name}_lu_polygons.shp")
         try:
-            greenness_of_osm_tags(aoi_name, config)
-            green_from_osm(aoi_name, config)
-        except Exception as err:
-            logger.critical(err)
-            sys.exit(3)
+            green_tags = greenness_of_osm_tags(
+                aoi_name, config, ndvi_dir, lu_polygons_file
+            )
+            green_tags.to_csv(os.path.join(out_dir_aoi, aoi_name + "_green_tags.csv"))
+        except Exception:
+            logger.exception("Error during calculating greenness of OSM tags:")
+            sys.exit(1)
 
-    if run_green_from_s2:
+    if run_green_osm:
+        ndvi_dir = create_subfolder(out_dir_aoi, "ndvi")
+        lu_polygons_file = os.path.join(out_dir_aoi, f"{aoi_name}_lu_polygons.shp")
+        green_tags_file = os.path.join(out_dir_aoi, aoi_name + "_green_tags.csv")
         try:
-            green_from_ndvi(aoi_name, config, "s2")
-        except Exception as err:
-            logger.critical(err)
+            lu_polygons_osm = green_from_osm(lu_polygons_file, green_tags_file)
+            lu_polygons_osm.to_file(lu_polygons_file)
+        except Exception:
+            logger.exception("Error during greenness calculation from OSM data:")
+            sys.exit(1)
+
+    if run_green_s2:
+        lu_polygons_file = os.path.join(out_dir_aoi, f"{aoi_name}_lu_polygons.shp")
+        ndvi_dir = create_subfolder(out_dir_aoi, "ndvi")
+        try:
+            lu_polygons_ndvi = green_from_ndvi(
+                aoi_name, config, ndvi_dir, lu_polygons_file
+            )
+            lu_polygons_ndvi.to_file(lu_polygons_file)
+        except Exception:
+            logger.exception("Error during greenness calculation from Sentinel-2 data:")
             sys.exit(3)
 
     if run_fusion:
+        beliefs_dir = create_subfolder(out_dir_aoi, "beliefs")
+        lu_polygons_file = os.path.join(out_dir_aoi, f"{aoi_name}_lu_polygons.shp")
+        lu_polygons_file2 = os.path.join(
+            out_dir_aoi, f"{aoi_name}_lu_polygons_final.shp"
+        )
         try:
-            fuse(aoi_name, config)
-        except Exception as err:
-            logger.critical(err)
+            class_ndvi_osm_geo = fuse(aoi_name, config, lu_polygons_file)
+            class_ndvi_osm_geo.to_file(lu_polygons_file2)
+        except Exception:
+            logger.exception("Error during greenness fusion:")
             sys.exit(3)
 
     if run_green_index:
         try:
             calc_green_index(aoi_name, config)
-        except Exception as err:
-            logger.critical(err)
+        except Exception:
+            logger.exception("Error during green index calculation:")
             sys.exit(3)
