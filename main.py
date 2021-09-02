@@ -36,12 +36,14 @@ if __name__ == "__main__":
     run_download_traffic = False
     run_download_landuse = False
     run_download_buildings = False
+    run_download_ors_highways = False
+    run_download_trees = True
     run_landuse_polygons = False
     run_ndvi = False
     run_green_osm_tags = False
     run_green_osm = False
     run_green_s2 = False
-    run_fusion = True
+    run_fusion = False
     run_green_index = False
 
     # Load configuration parameters
@@ -73,7 +75,7 @@ if __name__ == "__main__":
             download_features(
                 bbox=config["aois"][aoi_name]["bbox"],
                 timestamp=config["aois"][aoi_name]["timestamp"],
-                tags=config_tags["landuse_features"],
+                tags=config_tags["landuse"],
                 outdir=landuse_feature_dir,
             )
         except Exception:
@@ -86,7 +88,7 @@ if __name__ == "__main__":
             download_features(
                 bbox=config["aois"][aoi_name]["bbox"],
                 timestamp=config["aois"][aoi_name]["timestamp"],
-                tags=config_tags["traffic_features"],
+                tags=config_tags["traffic"],
                 outdir=traffic_feature_dir,
             )
         except Exception:
@@ -99,7 +101,33 @@ if __name__ == "__main__":
             download_features(
                 bbox=config["aois"][aoi_name]["bbox"],
                 timestamp=config["aois"][aoi_name]["timestamp"],
-                tags=config_tags["building_features"],
+                tags=config_tags["buildings"],
+                outdir=building_feature_dir,
+            )
+        except Exception:
+            logger.exception("Error during download of buildings:")
+            sys.exit(1)
+
+    if run_download_ors_highways:
+        try:
+            building_feature_dir = create_subfolder(out_dir_aoi, "ohsome/highways")
+            download_features(
+                bbox=config["aois"][aoi_name]["bbox"],
+                timestamp=config["aois"][aoi_name]["timestamp"],
+                tags=config_tags["highways"],
+                outdir=building_feature_dir,
+            )
+        except Exception:
+            logger.exception("Error during download of buildings:")
+            sys.exit(1)
+
+    if run_download_trees:
+        try:
+            building_feature_dir = create_subfolder(out_dir_aoi, "ohsome/trees")
+            download_features(
+                bbox=config["aois"][aoi_name]["bbox"],
+                timestamp=config["aois"][aoi_name]["timestamp"],
+                tags=config_tags["trees"],
                 outdir=building_feature_dir,
             )
         except Exception:

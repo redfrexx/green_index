@@ -1,5 +1,78 @@
 {
-  "traffic_features": [
+  "highways": [
+    {
+      "tags": {
+        "highway": [
+          "*"
+        ],
+        "sidewalk": [
+          "yes",
+          "both",
+          "left",
+          "right"
+        ],
+        "route": [
+          "hiking",
+          "foot",
+          "ferry"
+        ],
+        "foot": [
+          "designated",
+          "yes",
+          "official",
+          "permissive"
+        ],
+        "sac_scale": [
+          "hiking"
+        ],
+        "ford": [
+          "*"
+        ],
+        "junction": [
+          "roundabout",
+          "circular"
+        ],
+        "railway": [
+          "platfrom"
+        ],
+        "man_made": [
+          "pier"
+        ],
+        "tunnel": [
+          "designated",
+          "yes",
+          "official",
+          "permissive"
+        ],
+        "bicycle": [
+          "official",
+          "designated"
+        ]
+      },
+      "geoms": [
+        "polygon",
+        "line"
+      ],
+      "name": "highways"
+    }
+  ],
+  "trees": [
+    {
+      "tags": {
+        "natural": [
+          "tree",
+          "tree_row"
+        ]
+      },
+      "geoms": [
+        "polygon",
+        "line",
+        "point"
+      ],
+      "name": "trees"
+    }
+  ],
+  "traffic": [
     {
       "tags": {
         "highway": [
@@ -43,7 +116,7 @@
       "name": "waterway"
     }
   ],
-  "landuse_features": [
+  "landuse": [
     {
       "tags": {
         "landuse": [
@@ -124,7 +197,7 @@
       "name": "amenity"
     }
   ],
-  "building_features": [
+  "buildings": [
     {
       "tags": {
         "building": "*"
