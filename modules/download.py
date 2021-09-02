@@ -10,35 +10,32 @@ from ohsome import OhsomeClient, OhsomeException
 from modules.utils import load_config
 
 
-def build_ohsome_filters(filter_items: list):
+def build_ohsome_filters(layer: dict):
     """
     Builds the filter string based a dictionary of tags
     :return:
     """
-    filters = {}
-    for item in filter_items:
-        if "geoms" in item.keys():
-            geom_filter = " or ".join(["geometry:{0}".format(i) for i in item["geoms"]])
-        if "types" in item.keys():
-            type_filter = " or ".join(["type:{0}".format(i) for i in item["types"]])
-        for key, values in item["tags"].items():
-            if isinstance(values, list):
-                tag_filter = "{0} in ({1})".format(key, ", ".join(values))
-            elif isinstance(values, str):
-                tag_filter = f"{key}={values}"
-            else:
-                raise TypeError(f"{type(values)} not supported for tag values")
-            filter = tag_filter
-            if "geoms" in item.keys():
-                filter += f" and ({geom_filter})"
-            if "types" in item.keys():
-                filter += f" and ({type_filter})"
+    tag_filters = []
+    for key, values in layer["tags"].items():
+        if isinstance(values, list):
+            tag_filter = "{0} in ({1})".format(key, ", ".join(values))
+        elif isinstance(values, str):
+            tag_filter = f"{key}={values}"
+        else:
+            raise TypeError(f"{type(values)} not supported for tag values")
+        tag_filters.append(tag_filter)
+    ohsome_filter = "({0})".format(" or ".join(tag_filters))
+    if "geoms" in layer.keys():
+        geom_filter = " or ".join(["geometry:{0}".format(i) for i in layer["geoms"]])
+        ohsome_filter += f" and ({geom_filter})"
+    if "types" in layer.keys():
+        type_filter = " or ".join(["type:{0}".format(i) for i in layer["types"]])
+        ohsome_filter += f" and ({type_filter})"
 
-            filters[item["name"]] = filter
-    return filters
+    return ohsome_filter
 
 
-def download_features(bbox, timestamp, tags, outdir):
+def download_features(bbox, timestamp, layers, outdir):
     """
     Downloads all OSM highways for the specified timestamp and bbox
 
@@ -49,18 +46,14 @@ def download_features(bbox, timestamp, tags, outdir):
     :return:
     """
     client = OhsomeClient()
-    ohsome_filters = build_ohsome_filters(tags)
 
-    for name, fltr in ohsome_filters.items():
-        print(name)
-        try:
-            response = client.elements.geometry.post(
-                bboxes=bbox, time=timestamp, filter=fltr, properties="tags"
-            )
-        except OhsomeException as e:
-            print(e)
-            continue
-        response.to_json(os.path.join(outdir, f"{name}.geojson"))
+    for layer in layers:
+        ohsome_filter_str = build_ohsome_filters(layer)
+
+        response = client.elements.geometry.post(
+            bboxes=bbox, time=timestamp, filter=ohsome_filter_str, properties="tags"
+        )
+        response.to_json(os.path.join(outdir, f"{layer['name']}.geojson"))
 
 
 if __name__ == "__main__":
@@ -74,7 +67,7 @@ if __name__ == "__main__":
     download_features(
         bbox=config["bbox"],
         timestamp=config["timestamp"],
-        tags=config["landuse_features"],
+        layers=config["landuse_features"],
         outdir=landuse_feature_dir,
     )
 
@@ -84,6 +77,6 @@ if __name__ == "__main__":
     download_features(
         bbox=config["bbox"],
         timestamp=config["timestamp"],
-        tags=config["traffic_features"],
+        ohsome_filter=config["traffic_features"],
         outdir=traffic_feature_dir,
     )

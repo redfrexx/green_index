@@ -5,7 +5,8 @@
 __author__ = "Christina Ludwig, GIScience Research Group, Heidelberg University"
 __email__ = "christina.ludwig@uni-heidelberg.de"
 
-from modules.utils import build_ohsome_filters, calc_compactness
+from modules.download import build_ohsome_filters
+from modules.utils import calc_compactness
 from shapely.geometry import box, Polygon
 import geopandas as gpd
 import numpy as np
@@ -33,16 +34,17 @@ def test_build_filters():
     Test if filter string is created correctly
     :return:
     """
-    tags = [
-        {"tags": {"highway": ["primary", "secondary"]}, "geoms": ["polygon", "line"]},
-        {"tags": {"railway": "*"}, "geoms": ["line"]},
-    ]
+    layer = {
+        "tags": {
+            "highway": ["primary", "secondary"],
+            "bicycle": ["official", "designated"],
+        },
+        "geoms": ["polygon", "line"],
+        "name": "highway",
+    }
 
-    expected_filters = [
-        "(highway in (primary, secondary)) and (geometry:polygon or geometry:line)",
-        "(railway=*) and (geometry:line)",
-    ]
+    expected_filters = "(highway in (primary, secondary) and bicycle in (official, designated)) and (geometry:polygon or geometry:line)"
 
-    actual_filters = build_ohsome_filters(tags)
+    actual_filters = build_ohsome_filters(layer)
 
     assert expected_filters == actual_filters

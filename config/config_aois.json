@@ -39,7 +39,8 @@
         "mixed": 0.43,
         "grey": 0.15,
         "d": 0.094
-      }
+      },
+      "green_index_buffer": 20
     },
     "dresden": {
       "name": "Dresden",

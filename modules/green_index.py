@@ -16,21 +16,14 @@ import numpy as np
 from modules.utils import load_config
 
 
-def calc_green_index(aoi_name, config):
+def rasterize(lu_polygons_file, epsg):
     """
-    Calculates the green index for each highway feature
+    Rasterize a polygons file
+    :param polygons_file:
     :return:
     """
-
-    highway_file = os.path.join(
-        config["output_dir"], aoi_name, f"{aoi_name}_highways.geojson"
-    )
-    green_spaces_file = os.path.join(
-        config["output_dir"], aoi_name, "green", "greenness.shp"
-    )
-
     # Convert green spaces from geojson to tif
-    green_spaces_file_tif_tmp = os.path.splitext(green_spaces_file)[0] + "_tmp.tif"
+    lu_polygons_tif_temp = os.path.splitext(lu_polygons_file)[0] + "_tmp.tif"
     cmd = [
         "gdal_rasterize",
         "-a",
@@ -42,32 +35,59 @@ def calc_green_index(aoi_name, config):
         "5",
         "-ot",
         "Float32",
-        green_spaces_file,
-        green_spaces_file_tif_tmp,
+        lu_polygons_file,
+        lu_polygons_tif_temp,
     ]
     subprocess.call(cmd)
-    green_spaces_file_tif = os.path.splitext(green_spaces_file)[0] + ".tif"
+    lu_polygons_tif_file = os.path.splitext(lu_polygons_file)[0] + ".tif"
     cmd = [
         "gdalwarp",
         "-t_srs",
-        "EPSG:" + config["aois"][aoi_name]["epsg"],
-        green_spaces_file_tif_tmp,
-        green_spaces_file_tif,
+        "EPSG:" + epsg,
+        lu_polygons_tif_temp,
+        lu_polygons_tif_file,
     ]
     subprocess.call(cmd)
-    os.unlink(green_spaces_file_tif_tmp)
+    os.unlink(lu_polygons_tif_temp)
+    return lu_polygons_tif_file
 
-    # Load and buffer highways
+
+def calc_green_index(aoi_name, config, lu_polygons_file):
+    """
+    Calculates the green index for each highway feature
+    :return:
+    """
+
+    # Get config parameters
+    green_index_buffer = config["aois"][aoi_name]["green_index_buffer"]
+
+    # Create output directory
+    green_index_file = os.path.join(
+        config["output_dir"], aoi_name, f"{aoi_name}_green_index.geojson"
+    )
+    green_index_csv_file = os.path.join(
+        config["output_dir"], aoi_name, f"{aoi_name}_green_index.csv"
+    )
+
+    highway_file = os.path.join(
+        config["output_dir"], aoi_name, "ohsome", "highways", "highways.geojson"
+    )
+
+    lu_polygons_tif_file = rasterize(lu_polygons_file, config["aois"][aoi_name]["epsg"])
+
+    # Load highways
     bbox = box(*config["aois"][aoi_name]["bbox"])
     highways = gpd.read_file(highway_file, bbox=bbox).to_crs(
-        {"init": "epsg:{0}".format(config["aois"][aoi_name]["epsg"])}
+        epsg=config["aois"][aoi_name]["epsg"]
     )
+
+    # Buffer highways
     highways_buffered = highways.copy()
-    highways_buffered["geometry"] = highways_buffered.buffer(30)
+    highways_buffered["geometry"] = highways_buffered.buffer(green_index_buffer)
 
     # Extract green index for each highway
     res = zonal_stats(
-        highways_buffered["geometry"].values, green_spaces_file_tif, stats="mean"
+        highways_buffered["geometry"].values, lu_polygons_tif_file, stats="mean"
     )
     highways["green"] = pd.DataFrame(res)["mean"]
     del highways_buffered
@@ -75,13 +95,13 @@ def calc_green_index(aoi_name, config):
     # Export to file
     highways["green"] = highways["green"] * 100
     highways["green"] = highways["green"].round(0).astype(int)
-    highways.to_file(
-        os.path.join(config["output_dir"], aoi_name, "highways_green_index.shp")
-    )
+    highways.to_crs(epsg=4326).to_file(green_index_file, driver="GeoJSON")
+
+    # Create csv for input in ORS
     highways_csv = pd.DataFrame(highways.loc[:, ["@osmId", "green"]])
     highways_csv["id"] = highways_csv["@osmId"].map(lambda x: x.split("/")[1])
     highways_csv.loc[:, ["id", "green"]].to_csv(
-        os.path.join(config["output_dir"], aoi_name, "highways_green_index.csv"),
+        green_index_csv_file,
         sep=",",
         decimal=".",
         header=False,

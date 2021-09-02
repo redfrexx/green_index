@@ -2,9 +2,7 @@
   "highways": [
     {
       "tags": {
-        "highway": [
-          "*"
-        ],
+        "highway": "*",
         "sidewalk": [
           "yes",
           "both",
@@ -25,9 +23,7 @@
         "sac_scale": [
           "hiking"
         ],
-        "ford": [
-          "*"
-        ],
+        "ford": "*",
         "junction": [
           "roundabout",
           "circular"
