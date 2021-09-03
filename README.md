@@ -1,16 +1,80 @@
 # (Green) Index Calculation for OpenRouteService
 
+This repository contains source code to
+
+1. Calculate the greenness (i.e. presence of vegetation) of street blocks based on OpenStreetMap and Sentinel-2 data
+2. Calculates the green index for each OSM highway feature to be used in openrouteservice to generate green routes.
+
+## Installation
+
+All processing is done in Python. The requirements are:
+
+```
+Python 3. 9
+geopandas
+pygeos
+utm
+ohsome
+```
+
+You can install these dependencies using `pip`:
+
+```
+$ pip install -f requirements.txt
+```
 
 ## Usage
 
 ### 1. Greenness calculation
 
+The first step is to calculate the greenness of individual street blocks within the area of interest using the `calculate_greenness.py` script which takes two required parameters:
+
 ```
-$ calculate_greenness.py -a config_sample.json -g google_credentials_sample.json
+$ calculate_greenness.py -c config_sample.json -g google_credentials_sample.json
 ```
+
+#### Configuration file: -c / --config
+
+All parameters need to specify the area of interest must be given in a configuration file.
+
+``` json
+{
+  "name": "MA_LU_debug",
+  "bbox": [8.46874,49.4971,8.49213,49.50995],
+  "epsg": "32632",
+  "timestamp": "2021-08-15",
+  "cloud_coverage": 5,
+  "ndvi_year": 2020,
+  "output_dir": "./data"
+  "fuzzy_centers": {
+    "green": 0.71,
+    "mixed": 0.43,
+    "grey": 0.15,
+    "d": 0.094
+  },
+}
+```
+
+| Parameter | Explanation                                           |
+|-----------|-------------------------------------------------------|
+| name | The name of the area of interest. Used in output file names. |
+| bbox | Bounding box of area of interest in geographic coordinates, format: (minx, miny, max, maxy)|
+| epsg | The epsg of a projected coordinate reference system suitable for the are of interest.|
+| timestamp | Timestamp of the OSM data used for processing. |
+| ndvi_year| Year used to calculate the annual maximum NDVI. |
+| output_dir | Path to a existing directory in which output data will be stored. |
+| fuzzy centers | NDVI values used as centers for the classes |
+
+
+#### Google Credentials: -g / --google_cred
+
+A json file containing your personal credentials need to use Google Earth Engine. You need to [create a service account with google](https://developers.google.com/earth-engine/guides/service_account) and generate a key.
 
 
 ### 2. Index calculation
+
+After the greenness is calculated, the green index of each OSM highway feature can be calculated.
+
 
 ```
 $ python calculate_index.py -h
@@ -35,6 +99,8 @@ optional arguments:
 
 ```
 
+#### Examples:
+
 ```
 $ calculate_index.py -b 13.7176,51.0298,13.7957,51.0731 -r green.tif -w 20 -o index
 ```
@@ -42,3 +108,8 @@ $ calculate_index.py -b 13.7176,51.0298,13.7957,51.0731 -r green.tif -w 20 -o in
 ```
 $ calculate_index.py -b 13.7176,51.0298,13.7957,51.0731 -v benches.geojson -w 20
 ```
+
+### 3. Set up OpenRouteService
+
+Last step is to set up an instance of this [openrouteservice repository](https://github.com/redfrexx/openrouteservice/tree/shadow-trees).
+Put the green index csv file and an OSM file covering your area of interest in the folder `openrouteservice/docker/data`. Replace the files in the  openrouteservice/docker/docker-compose.yml accordingly.
