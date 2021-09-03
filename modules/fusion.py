@@ -110,10 +110,7 @@ def fuse(config):
 
     aoi_name = config["name"]
     lu_polygons_file = os.path.join(
-        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons.shp"
-    )
-    lu_polygons_file_fused = os.path.join(
-        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons_final.shp"
+        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons_green.shp"
     )
 
     lu_polygons = gpd.read_file(lu_polygons_file)
@@ -125,7 +122,6 @@ def fuse(config):
     osm_beliefs = lu_polygons[["g_osm", "n_osm", "gn_osm"]]
 
     # Convert data to mass functions
-
     ndvi_mass = convert_to_mass(ndvi_beliefs)
     osm_mass = convert_to_mass(osm_beliefs)
 
@@ -143,7 +139,7 @@ def fuse(config):
     # class_ndvi_osm_geo = class_ndvi_osm_geo.join(class_ndvi, rsuffix="_ndvi")
 
     class_ndvi_osm_geo.crs = lu_polygons.crs
-
-    class_ndvi_osm_geo.to_file(lu_polygons_file_fused)
+    class_ndvi_osm_geo = class_ndvi_osm_geo[["green", "grey", "green_grey", "geometry"]]
+    class_ndvi_osm_geo.to_file(lu_polygons_file)
 
     return class_ndvi_osm_geo

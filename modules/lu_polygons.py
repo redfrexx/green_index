@@ -5,6 +5,7 @@
 __author__ = "Christina Ludwig, GIScience Research Group, Heidelberg University"
 __email__ = "christina.ludwig@uni-heidelberg.de"
 
+import logging
 
 import pygeos
 import geopandas as gpd
@@ -79,7 +80,9 @@ def polygons_from_traffic(in_dir):
     # Buffer line Features
     # todo: adjust buffers based on traffic feature type
     line_features = features_df.loc[
-        features_df.geometry.map(lambda x: x.geom_type != "Polygon")
+        features_df.geometry.map(
+            lambda x: x.geom_type not in ("Polygon", "MultiPolygon")
+        )
     ]
     line_geoms = line_features.apply(
         lambda x: pygeos.from_shapely(x["geometry"]), axis=1
@@ -88,7 +91,7 @@ def polygons_from_traffic(in_dir):
 
     # Merge buffered line features with polygon features
     poly_features = features_df.loc[
-        features_df.geometry.map(lambda x: x.geom_type == "Polygon")
+        features_df.geometry.map(lambda x: x.geom_type in ("Polygon", "MultiPolygon"))
     ]
     poly_geoms = poly_features.apply(
         lambda x: pygeos.from_shapely(x["geometry"]), axis=1
@@ -121,7 +124,7 @@ def polygons_from_landuse(in_dir, street_blocks, epsg):
     files = glob.glob(os.path.join(in_dir, "landuse", "*.geojson"))
     for f in files:
         key = os.path.basename(f).split(".")[0]
-        print(key)
+        # print(key)
         features = gpd.read_file(f)
         if len(features) == 0:
             continue
@@ -222,19 +225,29 @@ def generate_landuse_polygons(config):
     )
 
     street_blocks = polygons_from_traffic(osm_dir)
-    # street_blocks.to_file(
-    #    os.path.join(out_dir, f"street_blocks_{no}.geojson"), driver="GeoJSON"
-    # )
+    street_blocks.to_file(
+        os.path.join(
+            config["output_dir"], config["name"], f"{config['name']}_street_blocks.shp"
+        )
+    )
 
     lu_polygons = polygons_from_landuse(osm_dir, street_blocks, config["epsg"])
-    # landuse_blocks.to_file(
-    #    os.path.join(out_dir, "landuse_blocks.geojson"), driver="GeoJSON"
-    # )
+    lu_polygons.to_file(
+        os.path.join(
+            config["output_dir"],
+            config["name"],
+            f"{config['name']}_lu_polygons_raw.shp",
+        )
+    )
 
     lu_polygons_clean = clean_polygons(lu_polygons)
-    # landuse_blocks_clean.to_file(
-    #    os.path.join(out_dir, "landuse_blocks_clean.geojson"), driver="GeoJSON"
-    # )
+    lu_polygons_clean.to_file(
+        os.path.join(
+            config["output_dir"],
+            config["name"],
+            f"{config['name']}_lu_polygons_clean.shp",
+        )
+    )
 
     lu_polygons_no_building = clip_buildings(osm_dir, lu_polygons_clean)
     lu_polygons_no_building.to_file(out_file)

@@ -77,6 +77,6 @@ if __name__ == "__main__":
     download_features(
         bbox=config["bbox"],
         timestamp=config["timestamp"],
-        ohsome_filter=config["traffic_features"],
+        layers=config["traffic_features"],
         outdir=traffic_feature_dir,
     )

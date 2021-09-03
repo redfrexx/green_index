@@ -53,6 +53,7 @@ def init_logger(name, log_file_name=None):
     """
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
+    logger.propagate = False
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%m-%d-%Y %I:%M:%S",
@@ -168,8 +169,8 @@ def rasterize(lu_polygons_file, column, epsg=None):
         "-of",
         "GTiff",
         "-tr",
-        "5",
-        "5",
+        "1",
+        "1",
         "-ot",
         "Float32",
         lu_polygons_file,

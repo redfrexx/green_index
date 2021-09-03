@@ -239,7 +239,9 @@ def green_from_osm(config):
     green_tags_file = os.path.join(
         config["output_dir"], config["name"], f"{config['name']}_green_tags.csv"
     )
-
+    out_file = os.path.join(
+        config["output_dir"], config["name"], f"{config['name']}_lu_polygons_green.shp"
+    )
     # Load lookup table for osm tags and greenness
     green_tags = pd.read_csv(green_tags_file).set_index("tag")
 
@@ -260,7 +262,7 @@ def green_from_osm(config):
             ("g_osm", "n_osm", "gn_osm", "nsamples"),
         ] = (green, grey, green_grey, nsamples)
 
-    lu_polygons.to_file(lu_polygons_file)
+    lu_polygons.to_file(out_file)
 
 
 if __name__ == "__main__":

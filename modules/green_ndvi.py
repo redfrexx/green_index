@@ -58,7 +58,7 @@ def green_from_ndvi(config):
 
     aoi_name = config["name"]
     lu_polygons_file = os.path.join(
-        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons.shp"
+        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons_green.shp"
     )
     ndvi_dir = os.path.join(config["output_dir"], aoi_name, "ndvi")
 
@@ -84,7 +84,7 @@ def green_from_ndvi(config):
     lu_polygons = gpd.read_file(lu_polygons_file)
 
     # Delete columns for beliefs if they already exist
-    if "green_osm" in lu_polygons.columns:
+    if "g_ndvi" in lu_polygons.columns:
         lu_polygons.drop(["g_ndvi", "n_ndvi", "gn_ndvi"], axis=1, inplace=True)
 
     targets_df_small = lu_polygons.copy().to_crs({"init": str(crs)})
