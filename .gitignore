@@ -4,4 +4,6 @@ __pycache__
 .idea
 .ipynb_checkpoints
 .pytest_cache
-extra
+extrad
+data
+env

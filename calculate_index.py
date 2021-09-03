@@ -16,7 +16,10 @@ from modules.utils import load_config, init_logger
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Process some integers.")
+    parser = argparse.ArgumentParser(
+        description="Calculates the index of each OSM highway based on provided raster or "
+        "vector file. The highways are downloaded using the ohsome API."
+    )
     parser.add_argument(
         "--bbox",
         "-b",
@@ -68,14 +71,19 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    assert (
-        args.vector_file is not None or args.raster_file is not None
-    ), "Either raster or vector file must be given."
-    assert not (
-        (args.vector_file is not None) and (args.raster_file is not None)
-    ), "Either raster or vector file must be given."
-
     logger = init_logger("calculate_index")
+
+    try:
+        assert (
+            args.vector_file is not None or args.raster_file is not None
+        ), "Either raster or vector file must be given."
+        assert not (
+            (args.vector_file is not None) and (args.raster_file is not None)
+        ), "Either raster or vector file must be given."
+        assert os.path.exists(args.output_dir), "Output directory does not exist."
+    except AssertionError as e:
+        logger.critical(e)
+        sys.exit(1)
 
     if not os.path.exists(os.path.join(args.output_dir, "highways.geojson")):
         config_file_tags = "./config/config_tags.json"
