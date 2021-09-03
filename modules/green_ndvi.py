@@ -11,11 +11,8 @@ import geopandas as gpd
 import logging
 import os
 import numpy as np
-from shapely.geometry import box
 import json
 from rasterio import features
-import glob
-import rasterio as rio
 
 import modules.utils as utils
 from modules.green_osm import calculate_probability_mass, read_ndvi

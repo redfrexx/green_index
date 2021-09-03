@@ -6,7 +6,7 @@ __author__ = "Christina Ludwig, GIScience Research Group, Heidelberg University"
 __email__ = "christina.ludwig@uni-heidelberg.de"
 
 import os
-from ohsome import OhsomeClient, OhsomeException
+from ohsome import OhsomeClient
 from modules.utils import load_config
 
 

@@ -32,8 +32,8 @@ if __name__ == "__main__":
         description="Calculates the greenness based on OSM and Sentinel-2 data."
     )
     parser.add_argument(
-        "--aoi",
-        "-a",
+        "--config",
+        "-c",
         required=True,
         dest="config_file",
         type=str,

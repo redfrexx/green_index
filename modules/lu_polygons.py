@@ -68,7 +68,7 @@ def polygons_from_traffic(in_dir):
     assert len(files) > 0, f"No OSM features not found in {in_dir}"
     all_features = []
     for f in files:
-        features = gpd.read_file(f)
+        features = gpd.read_file(f, names=["geometry"])
         features = features.loc[:, ["geometry"]]
         features["type"] = os.path.basename(f).split(".")[0]
         all_features.append(features)
@@ -98,7 +98,7 @@ def polygons_from_traffic(in_dir):
     )
     all_geoms = np.concatenate(
         (np.array(poly_geoms).ravel(), np.array(line_geoms_buf).ravel())
-    )  # pd.concat([line_geoms_buf, poly_geoms], axis=0)
+    )
     all_geoms_union = pygeos.union_all(all_geoms)
 
     # Calculate symmetric difference
@@ -106,6 +106,11 @@ def polygons_from_traffic(in_dir):
     geom_diff_df = gpd.GeoDataFrame(
         {"geometry": pygeos.get_parts(geoms_diff)}, crs="epsg:4326"
     )
+    geom_diff_df = geom_diff_df.loc[
+        geom_diff_df.geometry.map(lambda x: x.geom_type in ("Polygon", "Multipolygon"))
+    ]
+    geom_diff_df = geom_diff_df.explode()
+
     return geom_diff_df
 
 
@@ -118,13 +123,13 @@ def polygons_from_landuse(in_dir, street_blocks, epsg):
     """
     street_blocks["tags"] = np.empty((len(street_blocks), 0)).tolist()
     street_blocks = street_blocks.to_crs(epsg=epsg)
-    landuse_blocks = street_blocks.copy()
+    lu_polygons = street_blocks.copy()
 
     # Load traffic features
     files = glob.glob(os.path.join(in_dir, "landuse", "*.geojson"))
     for f in files:
         key = os.path.basename(f).split(".")[0]
-        # print(key)
+        print(key)
         features = gpd.read_file(f)
         if len(features) == 0:
             continue
@@ -133,12 +138,11 @@ def polygons_from_landuse(in_dir, street_blocks, epsg):
 
         values = features[key].unique()
         for val in values:
-            print(val)
             selected_features = features.loc[features[key] == val]
 
             # Land use blocks which intersect selected land use features
             intersected = gpd.overlay(
-                landuse_blocks,
+                lu_polygons,
                 selected_features,
                 how="intersection",
                 keep_geom_type=True,
@@ -146,19 +150,22 @@ def polygons_from_landuse(in_dir, street_blocks, epsg):
             intersected["tags"] = intersected["tags"].map(lambda x: x + [(key, val)])
 
             # Land use blocks which don't intersect the selected features
-            difference = gpd.overlay(
-                landuse_blocks, selected_features, how="difference"
-            )
+            difference = gpd.overlay(lu_polygons, selected_features, how="difference")
 
-            landuse_blocks = pd.concat(
+            lu_polygons = pd.concat(
                 [intersected[["geometry", "tags"]], difference[["geometry", "tags"]]],
                 axis=0,
                 ignore_index=True,
             )
-    landuse_blocks["tags"] = landuse_blocks["tags"].map(
+    lu_polygons["tags"] = lu_polygons["tags"].map(
         lambda tags: ";".join([f"{t[0]}={t[1]}" for t in tags])
     )
-    return landuse_blocks
+    lu_polygons = lu_polygons.loc[
+        lu_polygons.geometry.map(lambda x: x.geom_type in ("Polygon", "MultiPolygon"))
+    ]
+    lu_polygons = lu_polygons.explode()
+
+    return lu_polygons
 
 
 def clean_polygons(lu_polygons):
@@ -169,9 +176,9 @@ def clean_polygons(lu_polygons):
     lu_polygons["geometry"] = lu_polygons.buffer(-3, join_style=2, resolution=2).buffer(
         3, join_style=2, resolution=2
     )
+    lu_polygons.reset_index(inplace=True, drop=True)
     lu_polygons = lu_polygons.explode()
     lu_polygons["compactness"] = calc_compactness(lu_polygons)
-    lu_polygons.reset_index(inplace=True, drop=True)
     lu_polygons["area"] = lu_polygons.area
     lu_polygons = lu_polygons.loc[
         ~((lu_polygons.area < 2500) & (lu_polygons.compactness < 0.05))
@@ -188,19 +195,13 @@ def clip_buildings(in_dir, lu_polygons):
     """
     buildings_file = os.path.join(in_dir, "buildings", "building.geojson")
     buildings = gpd.read_file(buildings_file).to_crs(lu_polygons.crs)
-    # buildings_geoms = buildings.apply(
-    #    lambda x: pygeos.from_shapely(x["geometry"]), axis=1
-    # )
-    # lu_polygons_geoms = lu_polygons.apply(
-    #    lambda x: pygeos.from_shapely(x["geometry"]), axis=1
-    # )
-    # lu_polygons_geoms_clipped = pygeos.difference(lu_polygons_geoms, buildings_geoms)
-    # lu_polygons["geometry"] = pygeos.get_parts(lu_polygons_geoms_clipped)
 
     lu_polygons = gpd.overlay(lu_polygons, buildings, how="difference")
 
     geom_collections = lu_polygons.loc[
-        lu_polygons.geometry.map(lambda x: x.geom_type == "GeometryCollection")
+        lu_polygons.geometry.map(
+            lambda x: x.geom_type in ("GeometryCollection", "MultiPolygon")
+        )
     ].explode()
     additional_polygons = geom_collections.loc[
         geom_collections.geometry.map(lambda x: x.geom_type == "Polygon")
@@ -250,6 +251,14 @@ def generate_landuse_polygons(config):
     )
 
     lu_polygons_no_building = clip_buildings(osm_dir, lu_polygons_clean)
+    lu_polygons_no_building = lu_polygons_no_building.loc[
+        lu_polygons_no_building.geometry.map(
+            lambda x: x.geom_type in ("Polygon", "MultiPolygon")
+        )
+    ]
+    lu_polygons_no_building.reset_index(drop=True)
+    lu_polygons_no_building = lu_polygons_no_building.explode()
+    lu_polygons_no_building.reset_index(drop=True, inplace=True)
     lu_polygons_no_building.to_file(out_file)
 
 

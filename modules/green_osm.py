@@ -14,8 +14,6 @@ import os
 import rasterio as rio
 from rasterio import features
 import logging
-import json
-from shapely.geometry import box
 
 
 def get_ndvi_values(features_df, ndvi, nodata, affine):

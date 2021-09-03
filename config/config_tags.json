@@ -134,7 +134,8 @@
           "retail",
           "parking",
           "orchard",
-          "recreation_ground"
+          "recreation_ground",
+          "landfill"
         ]
       },
       "geoms": [
@@ -148,7 +149,8 @@
           "wood",
           "scrub",
           "heath",
-          "water"
+          "water",
+          "grassland"
         ]
       },
       "geoms": [
@@ -163,7 +165,8 @@
           "sports_centre",
           "pitch",
           "playground",
-          "recreation_ground"
+          "recreation_ground",
+          "water_park"
         ]
       },
       "geoms": [
