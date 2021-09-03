@@ -104,7 +104,9 @@
     },
     {
       "tags": {
-        "waterway": "*"
+        "waterway": "*",
+        "natural": "water",
+        "water": "river"
       },
       "geoms": [
         "polygon"
