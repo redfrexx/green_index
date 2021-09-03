@@ -3,24 +3,16 @@
 This repository contains source code to
 
 1. Calculate the greenness (i.e. presence of vegetation) of street blocks based on OpenStreetMap and Sentinel-2 data
-2. Calculates the green index for each OSM highway feature to be used in openrouteservice to generate green routes.
+2. Calculate the green index for each OSM highway feature to be used in an openrouteservice instance to calculate green routes.
 
 ## Installation
 
-All processing is done in Python. The requirements are:
+Python 3.x is required and the packages listed in `requirements.txt`. You can set up a new python environment with all dependencies using `pip`:
 
 ```
-Python 3. 9
-geopandas
-pygeos
-utm
-ohsome
-```
-
-You can install these dependencies using `pip`:
-
-```
-$ pip install -f requirements.txt
+$ python3 -m venv env
+$ source env/bin/activate
+$ python3 -m pip install -r requirements.txt
 ```
 
 ## Usage
@@ -71,7 +63,7 @@ All parameters need to specify the area of interest must be given in a configura
 A json file containing your personal credentials need to use Google Earth Engine. You need to [create a service account with google](https://developers.google.com/earth-engine/guides/service_account) and generate a key.
 
 
-### 2. Index calculation
+### 2. Green Index Calculation
 
 After the greenness is calculated, the green index of each OSM highway feature can be calculated.
 
@@ -109,7 +101,7 @@ $ calculate_index.py -b 13.7176,51.0298,13.7957,51.0731 -r green.tif -w 20 -o in
 $ calculate_index.py -b 13.7176,51.0298,13.7957,51.0731 -v benches.geojson -w 20
 ```
 
-### 3. Set up OpenRouteService
+### 3. Set up OpenRouteService instance
 
 Last step is to set up an instance of this [openrouteservice repository](https://github.com/redfrexx/openrouteservice/tree/shadow-trees).
 Put the green index csv file and an OSM file covering your area of interest in the folder `openrouteservice/docker/data`. Replace the files in the  openrouteservice/docker/docker-compose.yml accordingly.
