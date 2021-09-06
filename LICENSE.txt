@@ -1,6 +1,6 @@
 BSD 3-Clause License
 
-Copyright (c) 2021, giscience / meingruen
+Copyright (c) 2021, Christina Ludwig, GIScience Research Group, Heidelberg University
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
