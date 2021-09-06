@@ -93,7 +93,7 @@ The calculation of the NDVI is done using Google Earth Engine. To use this servi
 ``` json
 {
   "service_account": "XXXX@XXXX.iam.gserviceaccount.com",
-  "service_account_json": './config/quickstart-XXX-XXX.json"
+  "service_account_json": "./config/quickstart-XXX-XXX.json"
 }
 ```
 
