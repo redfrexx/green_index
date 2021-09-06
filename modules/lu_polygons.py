@@ -129,7 +129,6 @@ def polygons_from_landuse(in_dir, street_blocks, epsg):
     files = glob.glob(os.path.join(in_dir, "landuse", "*.geojson"))
     for f in files:
         key = os.path.basename(f).split(".")[0]
-        print(key)
         features = gpd.read_file(f)
         if len(features) == 0:
             continue
@@ -139,7 +138,6 @@ def polygons_from_landuse(in_dir, street_blocks, epsg):
         values = features[key].unique()
         for val in values:
             selected_features = features.loc[features[key] == val]
-
             # Land use blocks which intersect selected land use features
             intersected = gpd.overlay(
                 lu_polygons,
@@ -188,7 +186,7 @@ def clean_polygons(lu_polygons):
 
 def clip_buildings(in_dir, lu_polygons):
     """
-    Clip buildings out of land use polygons
+    Clip buildings out of land use polygons. convert all geometries to polygons. Point and line geometries are dropped.
     :param aoi_name:
     :param config:
     :return:
@@ -196,22 +194,28 @@ def clip_buildings(in_dir, lu_polygons):
     buildings_file = os.path.join(in_dir, "buildings", "building.geojson")
     buildings = gpd.read_file(buildings_file).to_crs(lu_polygons.crs)
 
-    lu_polygons = gpd.overlay(lu_polygons, buildings, how="difference")
+    # Clip out buildings from land use polygons
+    lu_polygons_clip = gpd.overlay(lu_polygons, buildings, how="difference")
+    lu_polygons_clip.reset_index(drop=True, inplace=True)
 
-    geom_collections = lu_polygons.loc[
-        lu_polygons.geometry.map(
+    # Convert geometry collections and multipolygons to polygons
+    geom_collections = lu_polygons_clip.loc[
+        lu_polygons_clip.geometry.map(
             lambda x: x.geom_type in ("GeometryCollection", "MultiPolygon")
         )
-    ].explode()
-    additional_polygons = geom_collections.loc[
+    ]
+    geom_collections = geom_collections.explode()
+    geom_collections.reset_index(drop=True, inplace=True)
+    geom_collections = geom_collections.loc[
         geom_collections.geometry.map(lambda x: x.geom_type == "Polygon")
     ]
-    additional_polygons.reset_index(drop=True, inplace=True)
-    lu_polygons = lu_polygons.loc[
-        lu_polygons.geometry.map(lambda x: x.geom_type != "GeometryCollection")
+    # Select all polygon features
+    polygons = lu_polygons_clip.loc[
+        lu_polygons_clip.geometry.map(lambda x: x.geom_type == "Polygon")
     ]
-    lu_polygons = pd.concat([lu_polygons, additional_polygons], axis=0)
-    return lu_polygons.loc[~lu_polygons.is_empty]
+    # Merge all features
+    lu_polygons_cleaned = pd.concat([polygons, geom_collections], axis=0)
+    return lu_polygons_cleaned.loc[~lu_polygons_cleaned.is_empty]
 
 
 def generate_landuse_polygons(config):
@@ -226,29 +230,29 @@ def generate_landuse_polygons(config):
     )
 
     street_blocks = polygons_from_traffic(osm_dir)
-    street_blocks.to_file(
-        os.path.join(
-            config["output_dir"], config["name"], f"{config['name']}_street_blocks.shp"
-        )
-    )
+    # street_blocks.to_file(
+    #    os.path.join(
+    #        config["output_dir"], config["name"], f"{config['name']}_street_blocks.shp"
+    #    )
+    # )
 
     lu_polygons = polygons_from_landuse(osm_dir, street_blocks, config["epsg"])
-    lu_polygons.to_file(
-        os.path.join(
-            config["output_dir"],
-            config["name"],
-            f"{config['name']}_lu_polygons_raw.shp",
-        )
-    )
+    # lu_polygons.to_file(
+    #    os.path.join(
+    #        config["output_dir"],
+    #        config["name"],
+    #        f"{config['name']}_lu_polygons_raw.shp",
+    #    )
+    # )
 
     lu_polygons_clean = clean_polygons(lu_polygons)
-    lu_polygons_clean.to_file(
-        os.path.join(
-            config["output_dir"],
-            config["name"],
-            f"{config['name']}_lu_polygons_clean.shp",
-        )
-    )
+    # lu_polygons_clean.to_file(
+    #    os.path.join(
+    #        config["output_dir"],
+    #        config["name"],
+    #        f"{config['name']}_lu_polygons_clean.shp",
+    #    )
+    # )
 
     lu_polygons_no_building = clip_buildings(osm_dir, lu_polygons_clean)
     lu_polygons_no_building = lu_polygons_no_building.loc[
@@ -260,10 +264,3 @@ def generate_landuse_polygons(config):
     lu_polygons_no_building = lu_polygons_no_building.explode()
     lu_polygons_no_building.reset_index(drop=True, inplace=True)
     lu_polygons_no_building.to_file(out_file)
-
-
-if __name__ == "__main__":
-
-    in_dir = "./data/test/ohsome"
-    out_dir = "./data/test/polygons"
-    no = 9

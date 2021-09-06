@@ -22,7 +22,7 @@ def integrate_trees(config):
     aoi_name = config["name"]
 
     lu_polygons_file = os.path.join(
-        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons_green.shp"
+        config["output_dir"], aoi_name, f"{aoi_name}_greenness.shp"
     )
     trees_file = os.path.join(config["output_dir"], aoi_name, "osm/trees/trees.geojson")
 

@@ -26,7 +26,6 @@ def get_ndvi_values(features_df, ndvi, nodata, affine):
     :return:
     """
 
-    # features_df = featuresdf[~features_df.geometry.isnull()]
     features_df = features_df[
         features_df.geometry.is_valid & ~features_df.geometry.is_empty
     ]
@@ -149,9 +148,7 @@ def greenness_of_osm_tags(config):
     :return:
     """
     buffer = -5
-
-    logger = logging.getLogger("root." + __name__)
-    logger.info("Deriving belief about greenness of OSM tags ...")
+    logger = logging.getLogger("calculate green")
 
     # Read config parameters
     green_c = config["fuzzy_centers"]["green"]
@@ -191,8 +188,6 @@ def greenness_of_osm_tags(config):
 
     # iterate over tags
     for tag in osm_tags:
-
-        print(tag)
         # Filter features by tag and remove empty geometries
         targets_with_tag = targets_df.loc[targets_df["tags"] == tag]
 
@@ -200,8 +195,7 @@ def greenness_of_osm_tags(config):
         ndvi_values = get_ndvi_values(targets_with_tag, ndvi, nodata, affine)
         if len(ndvi_values) == 0:
             tag_greenness[tag] = [None, None, None, 0]
-            logger.info(f"{tag}: No NDVI samples")
-            print(f"{tag}: No NDVI samples")
+            logger.warning(f"No NDVI samples for {tag}.")
             continue
 
         # Calculate green/non-green probabilities
@@ -238,7 +232,7 @@ def green_from_osm(config):
         config["output_dir"], config["name"], f"{config['name']}_green_tags.csv"
     )
     out_file = os.path.join(
-        config["output_dir"], config["name"], f"{config['name']}_lu_polygons_green.shp"
+        config["output_dir"], config["name"], f"{config['name']}_greenness_raw.shp"
     )
     # Load lookup table for osm tags and greenness
     green_tags = pd.read_csv(green_tags_file).set_index("tag")
@@ -261,8 +255,3 @@ def green_from_osm(config):
         ] = (green, grey, green_grey, nsamples)
 
     lu_polygons.to_file(out_file)
-
-
-if __name__ == "__main__":
-
-    pass

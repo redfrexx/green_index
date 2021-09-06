@@ -7,16 +7,16 @@ __email__ = "christina.ludwig@uni-heidelberg.de"
 
 import os
 import geopandas as gpd
-import numpy as np
-
-from pyds import MassFunction
 import pandas as pd
+from pyds import MassFunction
 
 
-def convert_to_mass(data, adapt_masses=False):
+def convert_to_mass(data: pd.DataFrame, adapt_masses: bool = False):
     """
     Converts data frame to series of probability masses
-    :return
+    :param data: Dataframe containing mass values for g_xxx (green), n_xxx (not green), gn_xxx (green / not green)
+    :param adapt_masses: If true, adapt masses so the maximum mass value is 0.95
+    :return: pd.DataFrame containing MassFunction objects
     """
     label_dict = {x: x.split("_")[0] for x in data.columns}
     return data.rename(columns=label_dict).apply(
@@ -27,11 +27,11 @@ def convert_to_mass(data, adapt_masses=False):
 def as_MassFunction(row, adapt_masses=True):
     """
     Adaptes the masses to a maximum value of 0.95. Data manipulation is performed inplace.
-    :param row:
+    :param row: pd.Series with fields g (green), n (not green) and gn (green / not green)
+    :param adapt_masses: If true, adapt masses so the maximum mass value is 0.95
     :return:
     """
     row_cp = row.copy()
-
     if adapt_masses:
         if row_cp["g"] > 0.95:
             row_cp["gn"] = row_cp["gn"] + row_cp["g"] - 0.95
@@ -39,17 +39,15 @@ def as_MassFunction(row, adapt_masses=True):
         elif row_cp["n"] > 0.95:
             row_cp["gn"] = row_cp["gn"] + row_cp["n"] - 0.95
             row_cp["n"] = 0.95
-
     return MassFunction(dict(row_cp))
 
 
-def classify_green(row):
+def classify_row(row: MassFunction):
     """
-    Classifies beliefs into green, grey or uncertain based on majority vote
+    Classifies beliefs into green, grey or uncertain based on pignistic probability
+    :param row: pd.Series with fields g (green), n (not green) and gn (green / not green)
     :returns
     """
-    uc_green = row.pl("g") - row.bel("g")
-    uc_grey = row.pl("n") - row.bel("n")
     prob = row.pignistic()
     if prob["g"] > prob["n"]:
         label = "green"
@@ -57,30 +55,28 @@ def classify_green(row):
         label = "grey"
     else:
         label = "uncertain"
-    return uc_green, uc_grey, prob["g"], prob["n"], label
+    return prob["g"], prob["n"], label
 
 
-def mass_to_class(mass):
+def classify_mass(mass):
     """
-    Dervies a classification based on probability masses
-    :returns
+    Derives a classification based on probability masses
+    :returns Dataframe with columns green, grey, green_grey,
     """
     mass_df = pd.DataFrame({"mass": mass})
     classified = mass_df.apply(
-        lambda x: classify_green(x["mass"]), axis=1, result_type="expand"
+        lambda x: classify_row(x["mass"]), axis=1, result_type="expand"
     )
     classified.columns = [
-        "g_unc",
-        "n_unc",
         "g_prob",
         "n_prob",
         "class",
     ]
 
-    fused_mass = mass_df.apply(lambda r: dict(r["mass"]), axis=1, result_type="expand")
-    fused_mass.columns = ["green", "grey", "green_grey"]
+    mass_values = mass_df.apply(lambda r: dict(r["mass"]), axis=1, result_type="expand")
+    mass_values.columns = ["green", "grey", "green_grey"]
 
-    return fused_mass.join(classified)
+    return mass_values.join(classified)
 
 
 def fuse_masses(mass1, mass2):
@@ -116,7 +112,6 @@ def fuse(config):
     lu_polygons = gpd.read_file(lu_polygons_file)
     lu_polygons = lu_polygons
     lu_polygons["area"] = lu_polygons.area
-    # lu_polygons["tags"].replace(np.nan, "None", inplace=True)
 
     ndvi_beliefs = lu_polygons[["g_ndvi", "n_ndvi", "gn_ndvi"]]
     osm_beliefs = lu_polygons[["g_osm", "n_osm", "gn_osm"]]
@@ -128,16 +123,11 @@ def fuse(config):
     ndvi_osm_mass = fuse_masses(ndvi_mass, osm_mass)
 
     # Classify based on beliefs
-    # class_ndvi = mass_to_class(ndvi_mass)
-    # class_osm = mass_to_class(osm_mass)
-    class_ndvi_osm = mass_to_class(ndvi_osm_mass)
+    class_ndvi_osm = classify_mass(ndvi_osm_mass)
 
     class_ndvi_osm_geo = gpd.GeoDataFrame(
         class_ndvi_osm.join(lu_polygons.loc[:, "geometry"])
     )
-    # class_ndvi_osm_geo = class_ndvi_osm_geo.join(class_osm, rsuffix="_osm")
-    # class_ndvi_osm_geo = class_ndvi_osm_geo.join(class_ndvi, rsuffix="_ndvi")
-
     class_ndvi_osm_geo.crs = lu_polygons.crs
     class_ndvi_osm_geo = class_ndvi_osm_geo[["green", "grey", "green_grey", "geometry"]]
     class_ndvi_osm_geo.to_file(lu_polygons_file)

@@ -55,11 +55,11 @@ def green_from_ndvi(config):
 
     aoi_name = config["name"]
     lu_polygons_file = os.path.join(
-        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons_green.shp"
+        config["output_dir"], aoi_name, f"{aoi_name}_greenness_raw.shp"
     )
     ndvi_dir = os.path.join(config["output_dir"], aoi_name, "ndvi")
 
-    logger = logging.getLogger("root." + __name__)
+    logger = logging.getLogger("calculate green")
 
     # Input parameters from config file ------------------
     green_c = config["fuzzy_centers"]["green"]

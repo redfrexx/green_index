@@ -66,20 +66,21 @@ if __name__ == "__main__":
     # Load configuration parameters
     config = load_config(args.config_file)
     check_config(config)
-
     # Create output folders
     aoi_name = config["name"]
     out_dir_aoi = os.path.join(config["output_dir"], aoi_name)
     os.makedirs(out_dir_aoi, exist_ok=True)
-
+    # Copy config file to output folder
     copyfile(
         args.config_file, os.path.join(out_dir_aoi, os.path.basename(args.config_file))
     )
-
+    # Set up logger
     log_file = os.path.join(out_dir_aoi, "log.log")
     logger = init_logger("calculate green", log_file)
-
+    # Load configuration file
     config_tags = load_config("./config/config_tags.json")
+
+    # Start running processing modules
 
     if run_download_landuse:
         if os.path.exists(os.path.join(out_dir_aoi, "osm/landuse")):
@@ -166,7 +167,7 @@ if __name__ == "__main__":
         try:
             generate_landuse_polygons(config)
         except Exception:
-            logger.exception("Error during generation of landuse polygons:")
+            logger.exception("Error during generation of land use polygons:")
             sys.exit(1)
 
     if run_ndvi:
@@ -183,7 +184,7 @@ if __name__ == "__main__":
         try:
             greenness_of_osm_tags(config)
         except Exception:
-            logger.exception("Error during calculating greenness of OSM tags:")
+            logger.exception("Error while calculating greenness of OSM tags:")
             sys.exit(1)
 
     if run_green_osm:
@@ -199,7 +200,7 @@ if __name__ == "__main__":
         try:
             green_from_ndvi(config)
         except Exception:
-            logger.exception("Error during greenness calculation from Sentinel-2 data:")
+            logger.exception("Error during greenness calculation from NDVI data:")
             sys.exit(3)
 
     if run_fusion:
@@ -221,9 +222,7 @@ if __name__ == "__main__":
     if run_rasterization:
         logger.info("Rasterizing greenness map...")
         try:
-            lu_polygons_file = os.path.join(
-                out_dir_aoi, f"{aoi_name}_lu_polygons_trees.shp"
-            )
+            lu_polygons_file = os.path.join(out_dir_aoi, f"{aoi_name}_greenness.shp")
             rasterize(lu_polygons_file, column="green")
         except Exception:
             logger.exception("Error during green index calculation:")

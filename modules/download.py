@@ -13,6 +13,7 @@ from modules.utils import load_config
 def build_ohsome_filters(layer: dict):
     """
     Builds the filter string based a dictionary of tags
+    :param layer: Dictionary containing tags, geoms and type information for ohsome request
     :return:
     """
     tag_filters = []
@@ -35,48 +36,20 @@ def build_ohsome_filters(layer: dict):
     return ohsome_filter
 
 
-def download_features(bbox, layers, outdir, timestamp=None):
+def download_features(bbox: str, layers: list, outdir: str, timestamp: str = None):
     """
     Downloads all OSM highways for the specified timestamp and bbox
-
-    :param bbox:
-    :param aoi_name:
-    :param config:
-    :param db:
+    :param bbox: Boudning box in geographic coordinates (minx, miny, maxx, maxy)
+    :param layers: List of dictionaries containing tags, geoms, types info for ohsome requests
+    :param outdir: Path to directory where osm data should be stored
+    :param timestamp: Date and time in ISO-format for OSM data download
     :return:
     """
     client = OhsomeClient()
 
     for layer in layers:
         ohsome_filter_str = build_ohsome_filters(layer)
-
         response = client.elements.geometry.post(
             bboxes=bbox, time=timestamp, filter=ohsome_filter_str, properties="tags"
         )
         response.to_json(os.path.join(outdir, f"{layer['name']}.geojson"))
-
-
-if __name__ == "__main__":
-
-    config_file = "./config/config.json"
-    config = load_config(config_file)
-
-    landuse_feature_dir = os.path.join(config["outdir"], "ohsome", "landuse")
-    if not os.path.exists(landuse_feature_dir):
-        os.mkdir(landuse_feature_dir)
-    download_features(
-        bbox=config["bbox"],
-        timestamp=config["timestamp"],
-        layers=config["landuse_features"],
-        outdir=landuse_feature_dir,
-    )
-
-    traffic_feature_dir = os.path.join(config["outdir"], "ohsome", "traffic")
-    if not os.path.exists(traffic_feature_dir):
-        os.mkdir(traffic_feature_dir)
-    download_features(
-        bbox=config["bbox"],
-        timestamp=config["timestamp"],
-        layers=config["traffic_features"],
-        outdir=traffic_feature_dir,
-    )

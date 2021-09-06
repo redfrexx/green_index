@@ -147,10 +147,3 @@ def ndvi(config, google_credentials):
     subprocess.call(cmd)
     [os.unlink(f) for f in ndvi_file_names]
     logger.info("Calculating NDVI - done.")
-
-
-if __name__ == "__main__":
-    aoi = "saopaulo"
-    config_path = "../config/config_saopaulo.json"
-    config = load_config(config_path)
-    ndvi(aoi, config)
