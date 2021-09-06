@@ -71,7 +71,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    logger = init_logger("calculate_index")
+    logger = init_logger("calculate index")
 
     try:
         assert (
@@ -80,12 +80,14 @@ if __name__ == "__main__":
         assert not (
             (args.vector_file is not None) and (args.raster_file is not None)
         ), "Either raster or vector file must be given."
-        assert os.path.exists(args.output_dir), "Output directory does not exist."
     except AssertionError as e:
         logger.critical(e)
         sys.exit(1)
 
+    os.makedirs(args.output_dir, exist_ok=True)
+
     if not os.path.exists(os.path.join(args.output_dir, "highways.geojson")):
+        logger.info("Downloading highway features...")
         config_file_tags = "./config/config_tags.json"
         config_tags = load_config(config_file_tags)
         try:
@@ -100,6 +102,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     try:
+        logger.info("Calculating green index...")
         calc_green_index(args.width, args.output_dir, raster_file=args.raster_file)
     except Exception:
         logger.exception("Error during green index calculation:")
