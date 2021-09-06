@@ -62,12 +62,12 @@ if __name__ == "__main__":
         help="Path to raster file used to calculate mean value within area nearby highway",
     )
     parser.add_argument(
-        "--outputdirectory",
+        "--out_dir",
         "-o",
         required=True,
         dest="output_dir",
         type=str,
-        help="Path to existing output directory.",
+        help="Path to output directory.",
     )
     args = parser.parse_args()
 

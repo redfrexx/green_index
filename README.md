@@ -71,7 +71,7 @@ The configuration file is a json file which contains all parameters required to 
     "mixed": 0.43,
     "grey": 0.15,
     "d": 0.094
-  },
+  }
 }
 ```
 
@@ -130,8 +130,8 @@ optional arguments:
                         Path to vector file containing features counted nearby highways
   --raster RASTER_FILE, -r RASTER_FILE
                         Path to raster file used to calculate mean value within area nearby highway
-  --outputdirectory OUTPUT_DIR, -o OUTPUT_DIR
-                        Path to existing output directory.
+  --out_dir OUTPUT_DIR, -o OUTPUT_DIR
+                        Path to output directory.
 
 ```
 
