@@ -90,7 +90,7 @@ def load_config(config_file):
 
 def calc_compactness(features):
     """
-    Selects sliver polygons
+    Calculate compactness of a polygon
     :return:
     """
     pygeos_geoms = features.apply(

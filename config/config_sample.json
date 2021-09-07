@@ -1,15 +1,15 @@
 {
-  "name": "sample",
+  "name": "example",
   "bbox": [
-    13.73613,
-    51.03524,
-    13.74978,
-    51.04396
+    13.7081,
+    51.0372,
+    13.7747,
+    51.0678
   ],
-  "epsg": "25832",
-  "timestamp": "2021-08-15",
+  "epsg": "32633",
+  "timestamp": "2019-06-30",
   "cloud_coverage": 5,
-  "ndvi_year": 2020,
+  "ndvi_year": 2019,
   "fuzzy_centers": {
     "green": 0.71,
     "mixed": 0.43,
