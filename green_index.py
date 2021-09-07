@@ -73,6 +73,24 @@ if __name__ == "__main__":
 
     logger = init_logger("calculate index")
 
+    output_dir = os.path.join(args.output_dir, "green_index")
+    os.makedirs(output_dir, exist_ok=True)
+
+    if not os.path.exists(os.path.join(output_dir, "highways.geojson")):
+        logger.info("Downloading highway features...")
+        config_file_tags = "./config/config_tags.json"
+        config_tags = load_config(config_file_tags)
+        try:
+            download_features(
+                bbox=args.bbox,
+                timestamp=args.timestamp,
+                layers=config_tags["highways"],
+                outdir=output_dir,
+            )
+        except Exception:
+            logger.exception("Error during download of highways:")
+            sys.exit(1)
+
     try:
         assert (
             args.vector_file is not None or args.raster_file is not None
@@ -84,26 +102,9 @@ if __name__ == "__main__":
         logger.critical(e)
         sys.exit(1)
 
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    if not os.path.exists(os.path.join(args.output_dir, "highways.geojson")):
-        logger.info("Downloading highway features...")
-        config_file_tags = "./config/config_tags.json"
-        config_tags = load_config(config_file_tags)
-        try:
-            download_features(
-                bbox=args.bbox,
-                timestamp=args.timestamp,
-                layers=config_tags["highways"],
-                outdir=args.output_dir,
-            )
-        except Exception:
-            logger.exception("Error during download of highways:")
-            sys.exit(1)
-
     try:
         logger.info("Calculating green index...")
-        calc_green_index(args.width, args.output_dir, raster_file=args.raster_file)
+        calc_green_index(args.width, output_dir, raster_file=args.raster_file)
     except Exception:
         logger.exception("Error during green index calculation:")
         sys.exit(1)
