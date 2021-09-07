@@ -2,12 +2,15 @@
 
 This repository contains the source code to
 
-1. calculate the greenness (i.e. presence of vegetation) based on OpenStreetMap (OSM) and Sentinel-2 data ([Ludwig et al. 2021](https://doi.org/10.3390/ijgi10040251))
-2. calculate the green index of each OSM highway feature to be used [openrouteservice](openrouteservice.org) to calculate green routes.
+1. **calculate the greenness** (i.e. presence of vegetation) based on OpenStreetMap (OSM) and Sentinel-2 data ([Ludwig et al. 2021](https://doi.org/10.3390/ijgi10040251))
+2. **calculate the green index** of each OSM highway feature to be used [openrouteservice](openrouteservice.org) to calculate green routes.
+3. **compare short and green routes** using openrouteservice.
 
-The code is licensed under [BSD 3](./LICENSE.txt) and is part of the study Ludwig, C., Lautenbach, S., Schömann, E., Zipf, A. (2021): *Comparison of fast and green routes for cyclists and pedestrians.* [GIScience Conference 2021](https://www.giscience.org/).
+Using this code the analysis shown in Ludwig, C., Lautenbach, S., Schömann, E., Zipf, A. (2021): *Comparison of fast and green routes for cyclists and pedestrians.* [GIScience Conference 2021](https://www.giscience.org/) can be applied in other regions. Note that for this to be possible the code had to be adapted slightly, so the results from the paper cannot be reproduced exactly.
 
-The green index can be calculated for any region, but the quality of the resulting green index depends on the quality of the underlying OSM and Sentinel-2 data.
+Also note that although the green index can be calculated for any region, the quality of the resulting green index and the green routes depends on the quality of the underlying OSM and Sentinel-2 data.
+
+The source code is licensed under [BSD 3](./LICENSE.txt).
 
 ![green index](./img/green_index.jpg)
 
@@ -22,24 +25,23 @@ $ python3 -m pip install -r requirements.txt
 $ pip install git+git://github.com/reineking/pyds.git
 ```
 
-## Usage
 
-### 1. Greenness calculation
+## 1. Greenness calculation
 
 The first step is to calculate the greenness of individual street blocks within the area of interest using the `calculate_greenness.py` script.
 
 **Example:**
 
 ``` console
-$ calculate_greenness.py -c config_sample.json -g google_credentials_sample.json
+$ greenness.py -c config_sample.json -g google_credentials_sample.json
 ```
 
 **Usage:**
 
 ``` console
-$ python calculate_greenness.py -h
+$ python greenness.py -h
 
-usage: calculate_greenness.py [-h] --config CONFIG_FILE --google_cred
+usage: greenness.py [-h] --config CONFIG_FILE --google_cred
                               GOOGLE_CRED_FILE
 
 Calculates the greenness based on OSM and Sentinel-2 data.
@@ -75,7 +77,7 @@ The configuration file is a json file which contains all parameters required to 
 }
 ```
 
-| Parameter | Explanation                                           |
+| Parameter | Description                                           |
 |-----------|-------------------------------------------------------|
 | name | The name of the area of interest. Used in output file names. |
 | bbox | Bounding box of area of interest in geographic coordinates, format: (minx, miny, max, maxy)|
@@ -97,7 +99,7 @@ The calculation of the NDVI is done using Google Earth Engine. To use this servi
 }
 ```
 
-### 2. Green Index Calculation
+## 2. Green Index Calculation
 
 After the greenness is calculated, the green index of each OSM highway feature can be calculated. This script will
 
@@ -107,15 +109,15 @@ After the greenness is calculated, the green index of each OSM highway feature c
 **Example:**
 
 ``` console
-$ python calculate_index.py -b 13.73613,51.03524,13.74978,51.04396 -r ./data/sample/sample_greenness.tif -w 20 -o ./data/sample/green_index
+$ python green_index.py -b 13.73613,51.03524,13.74978,51.04396 -r ./data/sample/sample_greenness.tif -w 20 -o ./data/sample
 ```
 
 **Usage:**
 
 ``` console
-$ python calculate_index.py -h
+$ python green_index.py -h
 
-Usage: calculate_index.py [-h] --bbox BBOX [--timestamp TIMESTAMP] --width WIDTH [--vector VECTOR_FILE] [--raster RASTER_FILE] --outputdirectory OUTPUT_DIR
+Usage: green_index.py [-h] --bbox BBOX [--timestamp TIMESTAMP] --width WIDTH [--vector VECTOR_FILE] [--raster RASTER_FILE] --out_dir OUTPUT_DIR
 
 Calculates the index of each OSM highway based on provided raster or vector file. The highways are downloaded using the ohsome API.
 
@@ -132,10 +134,11 @@ optional arguments:
                         Path to raster file used to calculate mean value within area nearby highway
   --out_dir OUTPUT_DIR, -o OUTPUT_DIR
                         Path to output directory.
-
 ```
 
-### 3. Set up OpenRouteService instance
+### 3. Comparison of green and short routes
+
+#### 3.1 Set up openrouteservice instance
 
 Last step is to set up an instance of the openrouteservice with the produced green index.
 
@@ -143,6 +146,64 @@ Last step is to set up an instance of the openrouteservice with the produced gre
 2. Download the OSM data for your area of interest from [Geofabrik](https://download.geofabrik.de/).
 3. Put the green index csv file and an OSM file in the folder `openrouteservice/docker/data`.
 4. Replace the files in the `openrouteservice/docker/docker-compose.yml` to match your files.
+
+
+#### 3.2. Comparison of routes
+
+As a last step random foot or bike trips can be simulated and the respective green and short routs are compared.
+
+**Example:**
+
+``` console
+$ python route_comparison.py -c ./config_comparison_sample.json
+```
+
+**Usage:**
+
+``` console
+$ python route_comparison.py -h
+
+usage: route_comparison.py [-h] --config CONFIG_FILE
+
+Comparison of short and green routes using openrouteservice
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --config CONFIG_FILE, -c CONFIG_FILE
+                        Configuration file
+
+```
+
+``` json
+{
+  "name": "sample",
+  "out_dir": "./data",
+  "districts_file": "./data/districts/districts_sample.geojson",
+  "col_name": "bez",
+  "epsg": "32633",
+  "profile": "foot-walking",
+  "steep_level": 1,
+  "n_routes": 100,
+  "min_length" : 200,
+  "max_length" : 5000,
+  "ors_url": "http://localhost:81/ors/"
+}
+```
+
+| Parameter | Description                                           |
+|-----------|-------------------------------------------------------|
+| name | The name of the area of interest. Used in output file names. |
+| out_dir | Path to a existing directory in which output data will be stored. |
+| districts_file | Vector file containing the districts of the region|
+| col_name | Column name to use a unique district name. |
+| epsg | The epsg of a projected coordinate reference system suitable for the are of interest.|
+| profile | "foot-walking" for pedestrian or "cycling-regular" for bike routes. |
+| steep_level| Value between 0 (avoid slopes) and 3 (do not avoid slopes)|
+| n_routes | Number of routes to be generated for each pair of districts |
+| min_length| Minimum length of route |
+| max_length| Maximum length of route |
+| ors_url | URL to local openrouteservice instance |
+
 
 ### Related publications
 
