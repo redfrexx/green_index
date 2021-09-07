@@ -106,8 +106,9 @@ def fuse(config):
 
     aoi_name = config["name"]
     lu_polygons_file = os.path.join(
-        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons_green.shp"
+        config["output_dir"], aoi_name, f"{aoi_name}_greenness_raw.shp"
     )
+    out_file = os.path.join(config["output_dir"], aoi_name, f"{aoi_name}_greenness.shp")
 
     lu_polygons = gpd.read_file(lu_polygons_file)
     lu_polygons = lu_polygons
@@ -130,6 +131,6 @@ def fuse(config):
     )
     class_ndvi_osm_geo.crs = lu_polygons.crs
     class_ndvi_osm_geo = class_ndvi_osm_geo[["green", "grey", "green_grey", "geometry"]]
-    class_ndvi_osm_geo.to_file(lu_polygons_file)
+    class_ndvi_osm_geo.to_file(out_file)
 
     return class_ndvi_osm_geo

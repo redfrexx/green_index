@@ -44,7 +44,7 @@ def integrate_trees(config):
     lu_polygons_trees = pd.concat([lu_polygons_no_trees, trees], axis=0)
 
     output_file = os.path.join(
-        config["output_dir"], aoi_name, f"{aoi_name}_lu_polygons_trees.shp"
+        config["output_dir"], aoi_name, f"{aoi_name}_greenness.shp"
     )
     lu_polygons_trees.to_file(output_file)
 

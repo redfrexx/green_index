@@ -2,15 +2,11 @@
 
 This repository contains the source code to
 
-1. **calculate the greenness** (i.e. presence of vegetation) based on OpenStreetMap (OSM) and Sentinel-2 data ([Ludwig et al. 2021](https://doi.org/10.3390/ijgi10040251))
+1. **calculate the greenness** (i.e. presence of vegetation) based on OpenStreetMap (OSM) and Sentinel-2 data [[1](https://doi.org/10.3390/ijgi10040251)]
 2. **calculate the green index** of each OSM highway feature to be used [openrouteservice](openrouteservice.org) to calculate green routes.
 3. **compare short and green routes** using openrouteservice.
 
-Using this code the analysis shown in Ludwig, C., Lautenbach, S., Schömann, E., Zipf, A. (2021): *Comparison of fast and green routes for cyclists and pedestrians.* [GIScience Conference 2021](https://www.giscience.org/) can be applied in other regions. Note that for this to be possible the code had to be adapted slightly, so the results from the paper cannot be reproduced exactly.
-
-Also note that although the green index can be calculated for any region, the quality of the resulting green index and the green routes depends on the quality of the underlying OSM and Sentinel-2 data.
-
-The source code is licensed under [BSD 3](./LICENSE.txt).
+Using this code the analysis presented at the [GIScience Conference 2021](https://www.giscience.org/) [2] can be applied to other geographic regions. Note that for this to be possible the code had to be adapted slightly, so the results from the paper cannot be reproduced exactly. Also note that although the green index can be calculated for any region, the quality of the resulting green index and the green routes depends on the quality of the underlying OSM and Sentinel-2 data.
 
 ![green index](./img/green_index.jpg)
 
@@ -109,7 +105,7 @@ After the greenness is calculated, the green index of each OSM highway feature c
 **Example:**
 
 ``` console
-$ python green_index.py -b 13.73613,51.03524,13.74978,51.04396 -r ./data/sample/sample_greenness.tif -w 20 -o ./data/sample
+$ python green_index.py -b 13.7081,51.0372,13.7747,51.0678 -r ./data/sample/sample_greenness.tif -w 20 -o ./data/sample
 ```
 
 **Usage:**
@@ -207,6 +203,6 @@ optional arguments:
 
 ### Related publications
 
-Ludwig, C., Lautenbach, S., Schömann, E., Zipf, A. (2021): Comparison of fast and green routes for cyclists and pedestrians. GIScience Conference 2021.
+[1]Ludwig, C., Hecht, R., Lautenbach, S., Schorcht, M., & Zipf, A. (2021). Mapping Public Urban Green Spaces Based on OpenStreetMap and Sentinel-2 Imagery Using Belief Functions. ISPRS International Journal of Geo-Information, 10(4), 251. doi: https://doi.org/10.3390/ijgi10040251
 
-Ludwig, C., Hecht, R., Lautenbach, S., Schorcht, M., & Zipf, A. (2021). Mapping Public Urban Green Spaces Based on OpenStreetMap and Sentinel-2 Imagery Using Belief Functions. ISPRS International Journal of Geo-Information, 10(4), 251. doi: https://doi.org/10.3390/ijgi10040251
+[2] Ludwig, C., Lautenbach, S., Schömann, E., Zipf, A. (2021): Comparison of fast and green routes for cyclists and pedestrians. GIScience Conference 2021.
