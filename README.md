@@ -21,7 +21,6 @@ $ python3 -m pip install -r requirements.txt
 $ pip install git+git://github.com/reineking/pyds.git
 ```
 
-
 ## 1. Greenness calculation
 
 The first step is to calculate the greenness of individual street blocks within the area of interest using the `calculate_greenness.py` script.
@@ -138,7 +137,7 @@ optional arguments:
 
 Last step is to set up an instance of the openrouteservice with the produced green index.
 
-1. Fork and clone this [this openrouteservice repository](https://github.com/redfrexx/openrouteservice/tree/shadow-trees). Use the branch *shadow-trees*. In this branch, the green index of the original [openrouteservice code](https://github.com/GIScience/openrouteservice) has been slightly adapted.
+1. Fork and clone this [this openrouteservice repository](https://github.com/redfrexx/openrouteservice). Checkout out the branch *green_index*. In this branch, the green index of the original [openrouteservice code](https://github.com/GIScience/openrouteservice) has been slightly adapted.
 2. Download the OSM data for your area of interest from [Geofabrik](https://download.geofabrik.de/).
 3. Put the green index csv file and an OSM file in the folder `openrouteservice/docker/data`.
 4. Replace the files in the `openrouteservice/docker/docker-compose.yml` to match your files.
